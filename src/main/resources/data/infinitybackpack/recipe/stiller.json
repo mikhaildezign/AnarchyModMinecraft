@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#X#",
+    "Y#Y",
+    "#X#"
+  ],
+  "key": {
+    "#": { "item": "minecraft:gunpowder" },
+    "X": { "item": "minecraft:sand" },
+    "Y": { "item": "infinitybackpack:dynamite_c4" }
+  },
+  "result": {
+    "id": "infinitybackpack:stiller",
+    "count": 1
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#X#",
+    "X#X",
+    "#X#"
+  ],
+  "key": {
+    "#": { "item": "infinitybackpack:explosive_material" },
+    "X": { "item": "infinitybackpack:dynamite_a" }
+  },
+  "result": {
+    "id": "infinitybackpack:dynamite_b2",
+    "count": 1
+  }
+}

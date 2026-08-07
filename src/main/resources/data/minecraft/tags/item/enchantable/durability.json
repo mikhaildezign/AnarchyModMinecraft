@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "infinitybackpack:armored_elytra",
+    "infinitybackpack:unbreakable_elytra",
+    "infinitybackpack:jet_elytra",
+    "infinitybackpack:jet_armored_elytra",
+    "infinitybackpack:jet_unbreakable_elytra",
+    "infinitybackpack:combined_elytra"
+  ]
+}

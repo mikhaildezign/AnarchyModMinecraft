@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#X#",
+    "Y#Y",
+    "#X#"
+  ],
+  "key": {
+    "#": { "item": "minecraft:gunpowder" },
+    "X": { "item": "minecraft:sand" },
+    "Y": { "item": "minecraft:tnt" }
+  },
+  "result": {
+    "id": "infinitybackpack:dynamite_a",
+    "count": 1
+  }
+}

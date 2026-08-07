@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "#X#",
+    "XYX",
+    "#X#"
+  ],
+  "key": {
+    "#": { "item": "minecraft:redstone_block" },
+    "X": { "item": "infinitybackpack:stiller" },
+    "Y": { "item": "minecraft:golden_pickaxe" }
+  },
+  "result": {
+    "id": "infinitybackpack:golden_pickaxe_jake",
+    "count": 1
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "NNN",
+    "NSN",
+    "NNN"
+  ],
+  "key": {
+    "N": {
+      "item": "minecraft:netherite_block"
+    },
+    "S": {
+      "tag": "c:shulker_boxes"
+    }
+  },
+  "result": {
+    "id": "infinitybackpack:infinity_backpack",
+    "count": 1
+  }
+}

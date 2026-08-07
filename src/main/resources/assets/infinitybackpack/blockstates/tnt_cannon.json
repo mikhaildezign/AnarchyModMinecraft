@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "infinitybackpack:block/tnt_cannon" },
+    "facing=south": { "model": "infinitybackpack:block/tnt_cannon", "y": 180 },
+    "facing=west": { "model": "infinitybackpack:block/tnt_cannon", "y": 270 },
+    "facing=east": { "model": "infinitybackpack:block/tnt_cannon", "y": 90 },
+    "facing=up": { "model": "infinitybackpack:block/tnt_cannon", "x": 270 },
+    "facing=down": { "model": "infinitybackpack:block/tnt_cannon", "x": 90 }
+  }
+}

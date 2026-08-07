@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "X#X",
+    "#Y#",
+    "X#X"
+  ],
+  "key": {
+    "X": { "item": "infinitybackpack:dynamite_c4" },
+    "#": { "item": "infinitybackpack:explosive_material" },
+    "Y": { "item": "minecraft:sand" }
+  },
+  "result": {
+    "id": "infinitybackpack:shockwave",
+    "count": 1
+  }
+}
