@@ -248,7 +248,7 @@ public class InfinityBackpackMod implements ModInitializer {
             Map.of(
                     Enchantments.FIRE_PROTECTION, 5,
                     Enchantments.PROJECTILE_PROTECTION, 5,
-                    Enchantments.RESPIRATION, 2,
+                    Enchantments.RESPIRATION, 4,
                     Enchantments.AQUA_AFFINITY, 1,
                     Enchantments.BLAST_PROTECTION, 5,
                     Enchantments.PROTECTION, 5,
@@ -265,6 +265,33 @@ public class InfinityBackpackMod implements ModInitializer {
                     Enchantments.FIRE_PROTECTION, 5,
                     Enchantments.PROTECTION, 5,
                     Enchantments.UNBREAKING, 5,
+                    IMPENETRABLE, 2
+            ));
+
+    public static final Item INFINITY_LEGGINGS = registerInfinityArmor("infinity_leggings",
+            net.minecraft.world.item.ArmorMaterials.NETHERITE, ArmorItem.Type.LEGGINGS,
+            "Поножи Infinity", new int[]{0x006400, 0x00FF00, 0x006400},
+            Map.of(
+                    Enchantments.BLAST_PROTECTION, 5,
+                    Enchantments.PROJECTILE_PROTECTION, 5,
+                    Enchantments.FIRE_PROTECTION, 5,
+                    Enchantments.PROTECTION, 5,
+                    Enchantments.UNBREAKING, 5,
+                    IMPENETRABLE, 2
+            ));
+
+    public static final Item INFINITY_BOOTS = registerInfinityArmor("infinity_boots",
+            net.minecraft.world.item.ArmorMaterials.NETHERITE, ArmorItem.Type.BOOTS,
+            "Ботинки Infinity", new int[]{0x006400, 0x00FF00, 0x006400},
+            Map.of(
+                    Enchantments.BLAST_PROTECTION, 5,
+                    Enchantments.PROJECTILE_PROTECTION, 5,
+                    Enchantments.PROTECTION, 5,
+                    Enchantments.FEATHER_FALLING, 4,
+                    Enchantments.DEPTH_STRIDER, 4,
+                    Enchantments.FIRE_PROTECTION, 5,
+                    Enchantments.UNBREAKING, 5,
+                    Enchantments.SOUL_SPEED, 4,
                     IMPENETRABLE, 2
             ));
 
@@ -394,6 +421,8 @@ public class InfinityBackpackMod implements ModInitializer {
             content.accept(SUN_HELMET);
             content.accept(INFINITY_HELMET);
             content.accept(INFINITY_CHESTPLATE);
+            content.accept(INFINITY_LEGGINGS);
+            content.accept(INFINITY_BOOTS);
         });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
@@ -460,8 +489,9 @@ public class InfinityBackpackMod implements ModInitializer {
     private static Item registerInfinityArmor(String name, net.minecraft.core.Holder<net.minecraft.world.item.ArmorMaterial> mat,
                                               ArmorItem.Type type, String displayName, int[] gradient,
                                               Map<net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment>, Integer> enchants) {
+        int durability = type.getDurability(37); // 37 = базовая прочность незерита
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
-                new InfinityArmorItem(mat, type, new Item.Properties().stacksTo(1), displayName, gradient, enchants));
+                new InfinityArmorItem(mat, type, new Item.Properties().stacksTo(1).durability(durability), displayName, gradient, enchants));
     }
 }

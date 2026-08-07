@@ -31,7 +31,7 @@ public class InfinityBackpackItem extends Item {
         MutableComponent result = Component.empty();
 
         result.append(Component.literal("a")
-                .withStyle(Style.EMPTY.withObfuscated(true).withColor(ChatFormatting.GREEN)));
+                .withStyle(Style.EMPTY.withObfuscated(true).withColor(ChatFormatting.DARK_GREEN)));
         result.append(Component.literal(" "));
 
         int darkGreen = 0x008800;
@@ -49,7 +49,7 @@ public class InfinityBackpackItem extends Item {
 
         result.append(Component.literal(" "));
         result.append(Component.literal("a")
-                .withStyle(Style.EMPTY.withObfuscated(true).withColor(ChatFormatting.GREEN)));
+                .withStyle(Style.EMPTY.withObfuscated(true).withColor(ChatFormatting.DARK_GREEN)));
 
         return result;
     }
