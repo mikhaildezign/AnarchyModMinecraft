@@ -76,6 +76,11 @@ public class InfinityBackpackMod implements ModInitializer {
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "impenetrable")
     );
 
+    public static final ResourceKey<Enchantment> MAGNETISM = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "magnetism")
+    );
+
     public static final MenuType<BackpackMenu> BACKPACK_MENU = Registry.register(
             BuiltInRegistries.MENU,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "backpack"),
@@ -256,7 +261,7 @@ public class InfinityBackpackMod implements ModInitializer {
                     .durability(ArmorItem.Type.BOOTS.getDurability(7))
                     .attributes(SUN_BOOTS_ATTRIBUTES)
                     .component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
-                    "Ботинки Солнца",
+                    "Ботинки солнца",
                     new int[]{0xDAA520, 0xFFFF00, 0xDAA520})
     );
 

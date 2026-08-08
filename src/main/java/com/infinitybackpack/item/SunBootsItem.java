@@ -1,7 +1,6 @@
 package com.infinitybackpack.item;
 
 import com.infinitybackpack.InfinityBackpackMod;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -14,13 +13,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
-
-import java.util.List;
 
 public class SunBootsItem extends ArmorItem {
     private final String displayName;
@@ -64,44 +59,8 @@ public class SunBootsItem extends ArmorItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        // ⬇️ Сначала зачарования (сверху)
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
-
-        // ⬇️ Потом описание (снизу)
-        tooltipComponents.add(Component.empty());
-        tooltipComponents.add(Component.literal("Особенности:").withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
-
-        tooltipComponents.add(
-                Component.literal("— имеет свойства ").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE))
-                        .append(Component.literal("незеритовых ботинок").withStyle(Style.EMPTY.withColor(0xFFAA00)))
-                        .append(Component.literal(";").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)))
-        );
-
-        tooltipComponents.add(
-                Component.literal("— полностью ").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE))
-                        .append(Component.literal("неразрушимы").withStyle(Style.EMPTY.withColor(0xFFAA00)))
-                        .append(Component.literal(";").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)))
-        );
-
-        tooltipComponents.add(
-                Component.literal("— возможно накладывать ").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE))
-                        .append(Component.literal("зачарования").withStyle(Style.EMPTY.withColor(0xFFAA00)))
-                        .append(Component.literal(".").withStyle(Style.EMPTY.withColor(ChatFormatting.WHITE)))
-        );
-    }
-
-    @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        if (level.isClientSide) return;
-
-        // ⬇️ Скрываем стандартные подсказки атрибутов ("Когда надето на ногу:", "Когда надето:" и т.п.)
-        ItemAttributeModifiers modifiers = stack.get(DataComponents.ATTRIBUTE_MODIFIERS);
-        if (modifiers != null && modifiers.showInTooltip()) {
-            stack.set(DataComponents.ATTRIBUTE_MODIFIERS, modifiers.withTooltip(false));
-        }
-
-        if (!(entity instanceof Player)) return;
+        if (level.isClientSide || !(entity instanceof Player)) return;
 
         ItemEnchantments current = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         if (current.isEmpty()) {
@@ -112,10 +71,9 @@ public class SunBootsItem extends ArmorItem {
                 registry.getHolder(Enchantments.BLAST_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
                 registry.getHolder(Enchantments.PROJECTILE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
                 registry.getHolder(Enchantments.FEATHER_FALLING).ifPresent(h -> enchantments.set(h, 4));
-                registry.getHolder(Enchantments.DEPTH_STRIDER).ifPresent(h -> enchantments.set(h, 3));
+                registry.getHolder(Enchantments.DEPTH_STRIDER).ifPresent(h -> enchantments.set(h, 4));
                 registry.getHolder(Enchantments.FIRE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.UNBREAKING).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.SOUL_SPEED).ifPresent(h -> enchantments.set(h, 3));
+                registry.getHolder(Enchantments.SOUL_SPEED).ifPresent(h -> enchantments.set(h, 34));
                 registry.getHolder(InfinityBackpackMod.IMPENETRABLE).ifPresent(h -> enchantments.set(h, 2));
 
                 stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());

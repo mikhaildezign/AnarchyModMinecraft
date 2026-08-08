@@ -1,0 +1,22 @@
+{
+  "description": {
+    "translate": "enchantment.infinitybackpack.magnetism"
+  },
+  "supported_items": "#infinitybackpack:magnetism",
+  "primary_items": "#infinitybackpack:magnetism",
+  "weight": 10,
+  "max_level": 1,
+  "min_cost": {
+    "base": 15,
+    "per_level_above_first": 0
+  },
+  "max_cost": {
+    "base": 45,
+    "per_level_above_first": 0
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {}
+}

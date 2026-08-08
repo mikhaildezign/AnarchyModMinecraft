@@ -54,6 +54,36 @@ public class InfinityBackpackClient implements ClientModInitializer {
                         .append(Component.literal("зачарования").withStyle(Style.EMPTY.withColor(0xFFAA00)))
                         .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
             }
+
+            if (stack.is(InfinityBackpackMod.SUN_BOOTS)) {
+                lines.removeIf(line -> {
+                    String s = line.getString();
+                    if (s.contains("Когда обуто") || s.contains("Когда надето")
+                            || s.contains("Когда надевается")
+                            || s.contains("When on") || s.contains("When equipped")) {
+                        return true;
+                    }
+                    if (s.startsWith("+") || s.startsWith("-")) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                lines.add(Component.literal("Особенности:")
+                        .withStyle(Style.EMPTY.withColor(0x555555)));
+                lines.add(Component.literal("— имеет свойства ")
+                        .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                        .append(Component.literal("незеритовых ботинок").withStyle(Style.EMPTY.withColor(0xFFAA00)))
+                        .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
+                lines.add(Component.literal("— полностью ")
+                        .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                        .append(Component.literal("неразрушимы").withStyle(Style.EMPTY.withColor(0xFFAA00)))
+                        .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
+                lines.add(Component.literal("— возможно накладывать ")
+                        .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                        .append(Component.literal("зачарования").withStyle(Style.EMPTY.withColor(0xFFAA00)))
+                        .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
+            }
         });
     }
 }

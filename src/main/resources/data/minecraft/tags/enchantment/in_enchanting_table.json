@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "infinitybackpack:impenetrable"
+    "infinitybackpack:impenetrable",
+    "infinitybackpack:magnetism"
   ]
 }
