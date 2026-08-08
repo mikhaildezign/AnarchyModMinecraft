@@ -4,17 +4,17 @@
   },
   "supported_items": "#infinitybackpack:impenetrable",
   "primary_items": "#infinitybackpack:impenetrable",
-  "weight": 1,
-  "max_level": 1,
+  "weight": 2,
+  "max_level": 2,
   "min_cost": {
-    "base": 25,
-    "per_level_above_first": 0
+    "base": 10,
+    "per_level_above_first": 100
   },
   "max_cost": {
-    "base": 50,
-    "per_level_above_first": 0
+    "base": 40,
+    "per_level_above_first": 100
   },
-  "anvil_cost": 4,
+  "anvil_cost": 2,
   "slots": [
     "armor"
   ],
