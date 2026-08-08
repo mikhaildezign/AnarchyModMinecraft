@@ -4,7 +4,7 @@
   },
   "supported_items": "#infinitybackpack:magnetism",
   "primary_items": "#infinitybackpack:magnetism",
-  "weight": 10,
+  "weight": 5,
   "max_level": 1,
   "min_cost": {
     "base": 15,

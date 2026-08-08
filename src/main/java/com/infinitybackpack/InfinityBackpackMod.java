@@ -27,6 +27,9 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -36,6 +39,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
@@ -48,6 +52,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -57,14 +62,17 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.Unbreakable;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
 
 public class InfinityBackpackMod implements ModInitializer {
@@ -79,6 +87,11 @@ public class InfinityBackpackMod implements ModInitializer {
     public static final ResourceKey<Enchantment> MAGNETISM = ResourceKey.create(
             Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "magnetism")
+    );
+
+    public static final ResourceKey<Enchantment> DRILL = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "drill")
     );
 
     public static final MenuType<BackpackMenu> BACKPACK_MENU = Registry.register(
@@ -151,7 +164,7 @@ public class InfinityBackpackMod implements ModInitializer {
             new int[]{0xFF0000, 0x8B0000},
             List.of(
                     Component.literal(" — взрывает практически все блоки").withStyle(Style.EMPTY.withColor(0xFFFFFF)),
-                    Component.literal("   в радиусе ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                    Component.literal(" в радиусе ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
                             .append(Component.literal("12 блоков").withStyle(Style.EMPTY.withColor(0xFF0000)))
                             .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFFFFFF)))
             ));
@@ -180,7 +193,7 @@ public class InfinityBackpackMod implements ModInitializer {
             new int[]{0xC71585, 0xFF1493},
             List.of(
                     Component.literal(" — после взрыва выпадает спавнер").withStyle(Style.EMPTY.withColor(0xFFFFFF)),
-                    Component.literal("   с привязанным мобом шансом в ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                    Component.literal(" с привязанным мобом шансом в ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
                             .append(Component.literal("50%").withStyle(Style.EMPTY.withColor(0xFF1493)))
                             .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF)))
             ));
@@ -190,7 +203,7 @@ public class InfinityBackpackMod implements ModInitializer {
             new int[]{0x00FFFF, 0x008B8B},
             List.of(
                     Component.literal(" — после взрыва выпадает спавнер").withStyle(Style.EMPTY.withColor(0xFFFFFF)),
-                    Component.literal("   с привязанным мобом шансом в ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                    Component.literal(" с привязанным мобом шансом в ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
                             .append(Component.literal("75%").withStyle(Style.EMPTY.withColor(0x00FFFF)))
                             .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF)))
             ));
@@ -471,6 +484,40 @@ public class InfinityBackpackMod implements ModInitializer {
             return true;
         });
 
+        PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
+            if (level.isClientSide) return;
+            ItemStack tool = player.getMainHandItem();
+            int drillLevel = getDrillLevel(tool);
+            if (drillLevel <= 0) return;
+
+            Direction facing = Direction.getNearest(player.getLookAngle().x, player.getLookAngle().y, player.getLookAngle().z);
+
+            for (int d = 0; d < drillLevel; d++) {
+                BlockPos layerCenter = pos.relative(facing, d);
+                for (int o1 = -1; o1 <= 1; o1++) {
+                    for (int o2 = -1; o2 <= 1; o2++) {
+                        if (d == 0 && o1 == 0 && o2 == 0) continue;
+
+                        BlockPos target = switch (facing.getAxis()) {
+                            case X -> layerCenter.offset(0, o1, o2);
+                            case Y -> layerCenter.offset(o1, 0, o2);
+                            case Z -> layerCenter.offset(o1, o2, 0);
+                        };
+
+                        BlockState targetState = level.getBlockState(target);
+                        if (targetState.isAir() || targetState.getDestroySpeed(level, target) < 0) continue;
+                        if (!player.hasCorrectToolForDrops(targetState)) continue;
+
+                        targetState.getBlock().playerDestroy(level, player, target, targetState, level.getBlockEntity(target), tool);
+                        if (level instanceof ServerLevel serverLevel) {
+                            targetState.spawnAfterBreak(serverLevel, target, tool, true);
+                        }
+                        level.removeBlock(target, false);
+                    }
+                }
+            }
+        });
+
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(Commands.literal("exp")
                     .executes(context -> {
@@ -510,12 +557,22 @@ public class InfinityBackpackMod implements ModInitializer {
                 new com.infinitybackpack.item.ExperienceBottleItem(new Item.Properties(), displayName, gradient, exp, level));
     }
 
-    private static Item registerInfinityArmor(String name, net.minecraft.core.Holder<net.minecraft.world.item.ArmorMaterial> mat,
+    private static Item registerInfinityArmor(String name, Holder<ArmorMaterial> mat,
                                               ArmorItem.Type type, String displayName, int[] gradient,
-                                              Map<net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment>, Integer> enchants) {
+                                              Map<ResourceKey<Enchantment>, Integer> enchants) {
         int durability = type.getDurability(37); // 37 = базовая прочность незерита
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
                 new InfinityArmorItem(mat, type, new Item.Properties().stacksTo(1).durability(durability), displayName, gradient, enchants));
+    }
+
+    public static int getDrillLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(DRILL)) {
+                return entry.getIntValue();
+            }
+        }
+        return 0;
     }
 }
