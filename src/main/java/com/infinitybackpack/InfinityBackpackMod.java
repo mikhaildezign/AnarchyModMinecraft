@@ -1,5 +1,6 @@
 package com.infinitybackpack;
 
+import com.infinitybackpack.item.SunBootsItem;
 import com.infinitybackpack.item.InfinityArmorItem;
 import net.minecraft.world.item.enchantment.Enchantments;
 import java.util.Map;
@@ -231,6 +232,12 @@ public class InfinityBackpackMod implements ModInitializer {
             .add(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_helmet_knockback"), 0.1, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.HEAD)
             .build();
 
+    private static final ItemAttributeModifiers SUN_BOOTS_ATTRIBUTES = ItemAttributeModifiers.builder()
+            .add(Attributes.ARMOR, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_boots_armor"), 3.0, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.FEET)
+            .add(Attributes.ARMOR_TOUGHNESS, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_boots_toughness"), 3.0, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.FEET)
+            .add(Attributes.KNOCKBACK_RESISTANCE, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_boots_knockback"), 0.1, AttributeModifier.Operation.ADD_VALUE), EquipmentSlotGroup.FEET)
+            .build();
+
     public static final Item SUN_HELMET = Registry.register(
             BuiltInRegistries.ITEM,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_helmet"),
@@ -239,6 +246,17 @@ public class InfinityBackpackMod implements ModInitializer {
                     .attributes(SUN_HELMET_ATTRIBUTES)
                     .component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
                     "Шлем солнца",
+                    new int[]{0xDAA520, 0xFFFF00, 0xDAA520})
+    );
+
+    public static final Item SUN_BOOTS = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "sun_boots"),
+            new SunBootsItem(net.minecraft.world.item.ArmorMaterials.GOLD, new Item.Properties()
+                    .durability(ArmorItem.Type.BOOTS.getDurability(7))
+                    .attributes(SUN_BOOTS_ATTRIBUTES)
+                    .component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
+                    "Ботинки Солнца",
                     new int[]{0xDAA520, 0xFFFF00, 0xDAA520})
     );
 
@@ -423,6 +441,7 @@ public class InfinityBackpackMod implements ModInitializer {
             content.accept(INFINITY_CHESTPLATE);
             content.accept(INFINITY_LEGGINGS);
             content.accept(INFINITY_BOOTS);
+            content.accept(SUN_BOOTS);
         });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
