@@ -575,4 +575,26 @@ public class InfinityBackpackMod implements ModInitializer {
         }
         return 0;
     }
+
+    public static String getEnchantmentId(Enchantment enchantment) {
+        try {
+            Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
+            Object registry = builtInRegistriesClass.getDeclaredField("ENCHANTMENT").get(null);
+            java.lang.reflect.Method getKey = registry.getClass().getMethod("getKey", Object.class);
+            Object key = getKey.invoke(registry, enchantment);
+            String result = key != null ? key.toString() : "";
+            System.out.println("[DEBUG] Enchantment ID for " + enchantment.getClass().getSimpleName() + " = '" + result + "'");
+            return result;
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Exception getting enchantment ID: " + e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public static boolean isMagnetism(Enchantment enchantment) {
+        boolean result = "infinitybackpack:magnetism".equals(getEnchantmentId(enchantment));
+        System.out.println("[DEBUG] isMagnetism = " + result);
+        return result;
+    }
 }

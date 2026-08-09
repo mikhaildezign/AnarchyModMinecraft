@@ -2,12 +2,12 @@ package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.item.CustomElytraItem;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.ItemStack;
@@ -34,8 +34,7 @@ public class EnchantmentMixin {
     @Inject(method = "canEnchant", at = @At("RETURN"), cancellable = true)
     private void restrictMagnetism(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         Enchantment self = (Enchantment)(Object)this;
-        ResourceLocation key = net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(self);
-        if (key == null || !key.equals(ResourceLocation.fromNamespaceAndPath("infinitybackpack", "magnetism"))) {
+        if (!InfinityBackpackMod.isMagnetism(self)) {
             return;
         }
         boolean isTool = stack.getItem() instanceof PickaxeItem
@@ -46,47 +45,34 @@ public class EnchantmentMixin {
         cir.setReturnValue(isTool);
     }
 
-    @Inject(method = "getMaxLevel", at = @At("RETURN"), cancellable = true)
-    private void increaseMaxLevel(CallbackInfoReturnable<Integer> cir) {
+    @ModifyReturnValue(method = "getMaxLevel", at = @At("RETURN"))
+    private int modifyMaxLevel(int original) {
         Enchantment self = (Enchantment)(Object)this;
-        ResourceLocation key = net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(self);
-        if (key == null) return;
+        String id = InfinityBackpackMod.getEnchantmentId(self);
+        System.out.println("[DEBUG] modifyMaxLevel called for '" + id + "', original = " + original);
 
-        switch (key.toString()) {
-            case "minecraft:efficiency" -> {
-                if (cir.getReturnValue() < 8) cir.setReturnValue(8);
-            }
-            case "minecraft:sharpness" -> {
-                if (cir.getReturnValue() < 7) cir.setReturnValue(7);
-            }
-            case "minecraft:smite" -> {
-                if (cir.getReturnValue() < 7) cir.setReturnValue(7);
-            }
-            case "minecraft:bane_of_arthropods" -> {
-                if (cir.getReturnValue() < 7) cir.setReturnValue(7);
-            }
-            case "minecraft:unbreaking" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:looting" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:fortune" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:protection" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:fire_protection" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:blast_protection" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
-            case "minecraft:projectile_protection" -> {
-                if (cir.getReturnValue() < 5) cir.setReturnValue(5);
-            }
+        if (id == null || id.isEmpty()) {
+            System.out.println("[DEBUG] ID is empty, returning original");
+            return original;
         }
+
+        int result = switch (id) {
+            case "minecraft:efficiency" -> Math.max(original, 8);
+            case "minecraft:sharpness" -> Math.max(original, 7);
+            case "minecraft:smite" -> Math.max(original, 7);
+            case "minecraft:bane_of_arthropods" -> Math.max(original, 7);
+            case "minecraft:unbreaking" -> Math.max(original, 5);
+            case "minecraft:looting" -> Math.max(original, 5);
+            case "minecraft:fortune" -> Math.max(original, 5);
+            case "minecraft:protection" -> Math.max(original, 5);
+            case "minecraft:fire_protection" -> Math.max(original, 5);
+            case "minecraft:blast_protection" -> Math.max(original, 5);
+            case "minecraft:projectile_protection" -> Math.max(original, 5);
+            default -> original;
+        };
+
+        System.out.println("[DEBUG] Returning " + result + " for " + id);
+        return result;
     }
 
     @Inject(method = "getFullname(Lnet/minecraft/core/Holder;I)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"), cancellable = true)
