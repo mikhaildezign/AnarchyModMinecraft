@@ -577,19 +577,21 @@ public class InfinityBackpackMod implements ModInitializer {
     }
 
     public static String getEnchantmentId(Enchantment enchantment) {
-        try {
-            Class<?> builtInRegistriesClass = Class.forName("net.minecraft.core.registries.BuiltInRegistries");
-            Object registry = builtInRegistriesClass.getDeclaredField("ENCHANTMENT").get(null);
-            java.lang.reflect.Method getKey = registry.getClass().getMethod("getKey", Object.class);
-            Object key = getKey.invoke(registry, enchantment);
-            String result = key != null ? key.toString() : "";
-            System.out.println("[DEBUG] Enchantment ID for " + enchantment.getClass().getSimpleName() + " = '" + result + "'");
-            return result;
-        } catch (Exception e) {
-            System.out.println("[DEBUG] Exception getting enchantment ID: " + e.getMessage());
-            e.printStackTrace();
-            return "";
+        String descId = enchantment.getDescriptionId();
+        // Формат: "enchantment.minecraft.efficiency" или "enchantment.infinitybackpack.magnetism"
+        if (descId.startsWith("enchantment.")) {
+            String withoutPrefix = descId.substring("enchantment.".length());
+            int dotIndex = withoutPrefix.indexOf('.');
+            if (dotIndex != -1) {
+                String namespace = withoutPrefix.substring(0, dotIndex);
+                String path = withoutPrefix.substring(dotIndex + 1);
+                String result = namespace + ":" + path;
+                System.out.println("[DEBUG] Enchantment ID = '" + result + "'");
+                return result;
+            }
         }
+        System.out.println("[DEBUG] Could not parse ID from: " + descId);
+        return "";
     }
 
     public static boolean isMagnetism(Enchantment enchantment) {
