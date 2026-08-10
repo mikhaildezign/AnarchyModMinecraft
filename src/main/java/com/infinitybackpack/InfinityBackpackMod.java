@@ -1,5 +1,6 @@
 package com.infinitybackpack;
 
+import net.minecraft.network.chat.contents.TranslatableContents;
 import com.infinitybackpack.item.SunBootsItem;
 import com.infinitybackpack.item.InfinityArmorItem;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -25,6 +26,7 @@ import com.infinitybackpack.screen.TntCannonMenu;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -36,13 +38,19 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.LivingEntity;
@@ -58,6 +66,7 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.Unbreakable;
@@ -486,11 +495,29 @@ public class InfinityBackpackMod implements ModInitializer {
 
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
             if (level.isClientSide) return;
+
             ItemStack tool = player.getMainHandItem();
             int drillLevel = getDrillLevel(tool);
             if (drillLevel <= 0) return;
+            if (tool.isEmpty() || !tool.isDamageableItem()) return;
 
-            Direction facing = Direction.getNearest(player.getLookAngle().x, player.getLookAngle().y, player.getLookAngle().z);
+            // Проверяем, не отключён ли бур
+            CustomData customData = tool.get(DataComponents.CUSTOM_DATA);
+            boolean drillDisabled = false;
+            if (customData != null) {
+                drillDisabled = customData.copyTag().getBoolean("DrillDisabled");
+            }
+            if (drillDisabled) {
+                return;
+            }
+
+            Direction facing = Direction.getNearest(
+                    player.getLookAngle().x,
+                    player.getLookAngle().y,
+                    player.getLookAngle().z
+            );
+
+            int extraBlocks = 0;
 
             for (int d = 0; d < drillLevel; d++) {
                 BlockPos layerCenter = pos.relative(facing, d);
@@ -513,9 +540,66 @@ public class InfinityBackpackMod implements ModInitializer {
                             targetState.spawnAfterBreak(serverLevel, target, tool, true);
                         }
                         level.removeBlock(target, false);
+                        extraBlocks++;
                     }
                 }
             }
+
+            if (extraBlocks > 0 && level instanceof ServerLevel serverLevel) {
+                int unbreakingLevel = getUnbreakingLevel(tool);
+                int actualDamage;
+
+                if (unbreakingLevel > 0) {
+                    actualDamage = 0;
+                    for (int i = 0; i < extraBlocks; i++) {
+                        // Ванильный шанс избежать: level / (level + 1)
+                        // Ослабляем ещё на 20% (итого 0.7 * 0.8 = 0.56)
+                        float avoidChance = (unbreakingLevel / (float)(unbreakingLevel + 1)) * 0.56f;
+                        if (level.getRandom().nextFloat() >= avoidChance) {
+                            actualDamage++;
+                        }
+                    }
+                } else {
+                    actualDamage = extraBlocks;
+                }
+
+                if (actualDamage > 0) {
+                    tool.hurtAndBreak(actualDamage, player, EquipmentSlot.MAINHAND);
+                }
+            }
+        });
+
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (!player.isShiftKeyDown() || world.isClientSide) {
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            }
+
+            ItemStack stack = player.getItemInHand(hand);
+            if (stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            int drillLevel = getDrillLevel(stack);
+            if (drillLevel <= 0) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+            CompoundTag tag = customData != null ? customData.copyTag() : new CompoundTag();
+            boolean currentlyDisabled = tag.getBoolean("DrillDisabled");
+            tag.putBoolean("DrillDisabled", !currentlyDisabled);
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+
+            boolean nowDisabled = !currentlyDisabled;
+            Component message = nowDisabled
+                    ? createDrillToggleMessage("Бур отключён", 0x8B0000, 0xFF0000)
+                    : createDrillToggleMessage("Бур включён", 0x006400, 0x00FF00);
+            player.displayClientMessage(message, true);
+
+            world.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.UI_BUTTON_CLICK, SoundSource.PLAYERS, 0.5f, nowDisabled ? 0.5f : 1.5f);
+
+            return InteractionResultHolder.success(stack);
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -560,7 +644,7 @@ public class InfinityBackpackMod implements ModInitializer {
     private static Item registerInfinityArmor(String name, Holder<ArmorMaterial> mat,
                                               ArmorItem.Type type, String displayName, int[] gradient,
                                               Map<ResourceKey<Enchantment>, Integer> enchants) {
-        int durability = type.getDurability(37); // 37 = базовая прочность незерита
+        int durability = type.getDurability(37);
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
                 new InfinityArmorItem(mat, type, new Item.Properties().stacksTo(1).durability(durability), displayName, gradient, enchants));
@@ -576,21 +660,31 @@ public class InfinityBackpackMod implements ModInitializer {
         return 0;
     }
 
-    public static String getEnchantmentId(Enchantment enchantment) {
-        String descId = enchantment.getDescriptionId();
-        // Формат: "enchantment.minecraft.efficiency" или "enchantment.infinitybackpack.magnetism"
-        if (descId.startsWith("enchantment.")) {
-            String withoutPrefix = descId.substring("enchantment.".length());
-            int dotIndex = withoutPrefix.indexOf('.');
-            if (dotIndex != -1) {
-                String namespace = withoutPrefix.substring(0, dotIndex);
-                String path = withoutPrefix.substring(dotIndex + 1);
-                String result = namespace + ":" + path;
-                System.out.println("[DEBUG] Enchantment ID = '" + result + "'");
-                return result;
+    public static int getUnbreakingLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(Enchantments.UNBREAKING)) {
+                return entry.getIntValue();
             }
         }
-        System.out.println("[DEBUG] Could not parse ID from: " + descId);
+        return 0;
+    }
+
+    public static String getEnchantmentId(Enchantment enchantment) {
+        var contents = enchantment.description().getContents();
+        if (contents instanceof TranslatableContents tc) {
+            String key = tc.getKey();
+            if (key.startsWith("enchantment.")) {
+                String sub = key.substring("enchantment.".length());
+                int dot = sub.indexOf('.');
+                if (dot != -1) {
+                    String result = sub.substring(0, dot) + ":" + sub.substring(dot + 1);
+                    System.out.println("[DEBUG] Enchantment ID = '" + result + "'");
+                    return result;
+                }
+            }
+        }
+        System.out.println("[DEBUG] Could not parse ID from enchantment description");
         return "";
     }
 
@@ -598,5 +692,34 @@ public class InfinityBackpackMod implements ModInitializer {
         boolean result = "infinitybackpack:magnetism".equals(getEnchantmentId(enchantment));
         System.out.println("[DEBUG] isMagnetism = " + result);
         return result;
+    }
+
+    private static Component createDrillToggleMessage(String text, int darkColor, int brightColor) {
+        MutableComponent result = Component.empty();
+        int len = text.length();
+        int half = len / 2;
+        for (int i = 0; i < len; i++) {
+            float ratio;
+            int color;
+            if (i <= half) {
+                ratio = half > 0 ? (float) i / half : 0f;
+                color = interpolateColor(darkColor, brightColor, ratio);
+            } else {
+                ratio = (len - 1 - half) > 0 ? (float) (i - half) / (len - 1 - half) : 0f;
+                color = interpolateColor(brightColor, darkColor, ratio);
+            }
+            Style style = Style.EMPTY.withColor(TextColor.fromRgb(color)).withBold(true);
+            result.append(Component.literal(String.valueOf(text.charAt(i))).withStyle(style));
+        }
+        return result;
+    }
+
+    private static int interpolateColor(int start, int end, float ratio) {
+        int r1 = (start >> 16) & 0xFF, g1 = (start >> 8) & 0xFF, b1 = start & 0xFF;
+        int r2 = (end >> 16) & 0xFF, g2 = (end >> 8) & 0xFF, b2 = end & 0xFF;
+        int r = Math.round(r1 + (r2 - r1) * ratio);
+        int g = Math.round(g1 + (g2 - g1) * ratio);
+        int b = Math.round(b1 + (b2 - b1) * ratio);
+        return (r << 16) | (g << 8) | b;
     }
 }

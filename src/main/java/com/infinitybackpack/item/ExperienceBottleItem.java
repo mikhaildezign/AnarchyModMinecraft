@@ -1,5 +1,8 @@
 package com.infinitybackpack.item;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -12,13 +15,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
 
 public class ExperienceBottleItem extends Item {
     private final String displayName;
-    private final int[] nameGradient; // [тёмный, яркий]
+    private final int[] nameGradient;
     private final int experienceAmount;
     private final int levelEquivalent;
 
@@ -42,6 +48,8 @@ public class ExperienceBottleItem extends Item {
                 .withStyle(Style.EMPTY.withColor(0xAAAAAA)));
         tooltipComponents.add(Component.literal("Киньте пузырёк, чтобы получить опыт")
                 .withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+        tooltipComponents.add(Component.literal("или починить инструмент с Починкой")
+                .withStyle(Style.EMPTY.withColor(0xAAAAAA)));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 
@@ -55,11 +63,52 @@ public class ExperienceBottleItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide) {
-            player.giveExperiencePoints(experienceAmount);
+            int usableXP = (int) (this.experienceAmount * 0.8f); // КПД 80%, 20% теряется
+            boolean repaired = false;
 
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.PLAYERS,
-                    0.5f, 0.4f / (level.getRandom().nextFloat() * 0.4f + 0.8f));
+            // Определяем инструмент в ПРОТИВОПОЛОЖНОЙ руке
+            ItemStack toolToRepair = (hand == InteractionHand.MAIN_HAND)
+                    ? player.getOffhandItem()
+                    : player.getMainHandItem();
+
+            if (!toolToRepair.isEmpty() && toolToRepair.isDamageableItem()) {
+                ItemEnchantments enchants = toolToRepair.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+                boolean hasMending = false;
+                for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchants.entrySet()) {
+                    if (entry.getKey().is(Enchantments.MENDING)) {
+                        hasMending = true;
+                        break;
+                    }
+                }
+
+                if (hasMending && toolToRepair.isDamaged()) {
+                    int damage = toolToRepair.getDamageValue();
+                    int maxRepair = usableXP * 2; // Mending: 1 XP = 2 прочности
+                    int actualRepair = Math.min(maxRepair, damage);
+                    int spentXP = (actualRepair + 1) / 2; // округление вверх
+
+                    toolToRepair.setDamageValue(damage - actualRepair);
+
+                    int remainingXP = usableXP - spentXP;
+                    if (remainingXP > 0) {
+                        player.giveExperiencePoints(remainingXP);
+                    }
+
+                    level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                            SoundEvents.ANVIL_USE, SoundSource.PLAYERS, 0.3f, 1.5f);
+
+                    repaired = true;
+                }
+            }
+
+            if (!repaired) {
+                // Нет Починки, инструмент цел, или не держит инструмент — даём 80% опыта
+                player.giveExperiencePoints(usableXP);
+
+                level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.PLAYERS,
+                        0.5f, 0.4f / (level.getRandom().nextFloat() * 0.4f + 0.8f));
+            }
 
             if (!player.isCreative()) {
                 stack.shrink(1);
@@ -72,12 +121,8 @@ public class ExperienceBottleItem extends Item {
     private static Component applyMirrorGradient(String text, int darkColor, int brightColor) {
         MutableComponent result = Component.empty();
         int len = text.length();
-        if (len == 0) {
-            return result;
-        }
-        if (len == 1) {
-            return Component.literal(text).withStyle(Style.EMPTY.withColor(TextColor.fromRgb(brightColor)));
-        }
+        if (len == 0) return result;
+        if (len == 1) return Component.literal(text).withStyle(Style.EMPTY.withColor(TextColor.fromRgb(brightColor)));
 
         for (int i = 0; i < len; i++) {
             float ratio = (float) i / (len - 1);

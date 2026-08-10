@@ -73,7 +73,7 @@ public class SunBootsItem extends ArmorItem {
                 registry.getHolder(Enchantments.FEATHER_FALLING).ifPresent(h -> enchantments.set(h, 4));
                 registry.getHolder(Enchantments.DEPTH_STRIDER).ifPresent(h -> enchantments.set(h, 4));
                 registry.getHolder(Enchantments.FIRE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.SOUL_SPEED).ifPresent(h -> enchantments.set(h, 34));
+                registry.getHolder(Enchantments.SOUL_SPEED).ifPresent(h -> enchantments.set(h, 4));
                 registry.getHolder(InfinityBackpackMod.IMPENETRABLE).ifPresent(h -> enchantments.set(h, 2));
 
                 stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());
