@@ -2,11 +2,13 @@ package com.infinitybackpack.client;
 
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.client.renderer.CustomPrimedTntRenderer;
+import com.infinitybackpack.client.renderer.ShulkerBoxItemRenderer;
 import com.infinitybackpack.client.screen.BackpackScreen;
 import com.infinitybackpack.client.screen.ExpExchangeScreen;
 import com.infinitybackpack.client.screen.TntCannonScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
@@ -22,6 +24,12 @@ public class InfinityBackpackClient implements ClientModInitializer {
 
         EntityRendererRegistry.register(InfinityBackpackMod.CUSTOM_PRIMED_TNT, CustomPrimedTntRenderer::new);
         EntityRendererRegistry.register(InfinityBackpackMod.SNOWBALL_CLUMP_PROJECTILE, context -> new ThrownItemRenderer<>(context, 1.5f, true));
+
+        // Регистрация кастомного рендерера для рюкзака (3D-модель шалкера)
+        BuiltinItemRendererRegistry.INSTANCE.register(
+                InfinityBackpackMod.INFINITY_BACKPACK,
+                new ShulkerBoxItemRenderer()
+        );
 
         // Тултип шлема солнца — убираем стандартные атрибуты, оставляем зачарования + наше описание
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
