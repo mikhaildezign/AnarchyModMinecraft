@@ -377,7 +377,7 @@ public class InfinityBackpackMod implements ModInitializer {
             ), true, false, false);
 
     public static final Item UNBREAKABLE_ELYTRA = registerElytra("unbreakable_elytra",
-            new Item.Properties().durability(592),
+            new Item.Properties().durability(592).component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
             "Нерушимые элитры", new int[]{0xFF1493, 0x9400D3},
             List.of(), false, true, false);
 
@@ -412,7 +412,7 @@ public class InfinityBackpackMod implements ModInitializer {
             ), true, false, true);
 
     public static final Item JET_UNBREAKABLE_ELYTRA = registerElytra("jet_unbreakable_elytra",
-            new Item.Properties().durability(592),
+            new Item.Properties().durability(592).component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
             "Реактивные нерушимые элитры", new int[]{0xFF1493, 0x9400D3},
             List.of(
                     Component.literal("— имеет свойства ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
@@ -421,7 +421,7 @@ public class InfinityBackpackMod implements ModInitializer {
             ), false, true, true);
 
     public static final Item COMBINED_ELYTRA = registerElytra("combined_elytra",
-            new Item.Properties().durability(592).attributes(NETHERITE_ELYTRA_ATTRIBUTES),
+            new Item.Properties().durability(592).attributes(NETHERITE_ELYTRA_ATTRIBUTES).component(DataComponents.UNBREAKABLE, new Unbreakable(false)),
             "Комбинированные элитры", new int[]{0xFF0000, 0x8B0000},
             List.of(
                     Component.literal("— имеет свойства ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
