@@ -63,10 +63,8 @@ public class ExperienceBottleItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         if (!level.isClientSide) {
-            int usableXP = (int) (this.experienceAmount * 0.8f); // КПД 80%, 20% теряется
             boolean repaired = false;
 
-            // Определяем инструмент в ПРОТИВОПОЛОЖНОЙ руке
             ItemStack toolToRepair = (hand == InteractionHand.MAIN_HAND)
                     ? player.getOffhandItem()
                     : player.getMainHandItem();
@@ -82,6 +80,8 @@ public class ExperienceBottleItem extends Item {
                 }
 
                 if (hasMending && toolToRepair.isDamaged()) {
+                    // КПД 80% ТОЛЬКО для починки
+                    int usableXP = (int) (this.experienceAmount * 0.8f);
                     int damage = toolToRepair.getDamageValue();
                     int maxRepair = usableXP * 2; // Mending: 1 XP = 2 прочности
                     int actualRepair = Math.min(maxRepair, damage);
@@ -102,8 +102,8 @@ public class ExperienceBottleItem extends Item {
             }
 
             if (!repaired) {
-                // Нет Починки, инструмент цел, или не держит инструмент — даём 80% опыта
-                player.giveExperiencePoints(usableXP);
+                // Нет Починки, инструмент цел, или не держит инструмент — даём 100% опыта
+                player.giveExperiencePoints(this.experienceAmount);
 
                 level.playSound(null, player.getX(), player.getY(), player.getZ(),
                         SoundEvents.EXPERIENCE_BOTTLE_THROW, SoundSource.PLAYERS,

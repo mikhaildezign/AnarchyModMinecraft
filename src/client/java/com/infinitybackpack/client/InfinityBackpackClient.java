@@ -25,13 +25,12 @@ public class InfinityBackpackClient implements ClientModInitializer {
         EntityRendererRegistry.register(InfinityBackpackMod.CUSTOM_PRIMED_TNT, CustomPrimedTntRenderer::new);
         EntityRendererRegistry.register(InfinityBackpackMod.SNOWBALL_CLUMP_PROJECTILE, context -> new ThrownItemRenderer<>(context, 1.5f, true));
 
-        // Регистрация кастомного рендерера для рюкзака (3D-модель шалкера)
+        // Регистрация кастомного рендерера для рюкзака (3D-модель шалкера с твоей текстурой)
         BuiltinItemRendererRegistry.INSTANCE.register(
                 InfinityBackpackMod.INFINITY_BACKPACK,
                 new ShulkerBoxItemRenderer()
         );
 
-        // Тултип шлема солнца — убираем стандартные атрибуты, оставляем зачарования + наше описание
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             if (stack.is(InfinityBackpackMod.SUN_HELMET)) {
                 lines.removeIf(line -> {
