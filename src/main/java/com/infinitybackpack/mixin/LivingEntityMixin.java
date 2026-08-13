@@ -1,9 +1,7 @@
 package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.InfinityBackpackMod;
-import com.infinitybackpack.item.CustomElytraItem;
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -16,72 +14,25 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ElytraItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
 
-    // === ПОДДЕРЖИВАЕМ ПОЛЁТ ДЛЯ КАСТОМНЫХ ЭЛИТР (сервер) ===
-    @WrapOperation(
-            method = "updateFallFlying",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/ItemStack;is(Lnet/minecraft/world/item/Item;)Z"
-            )
-    )
-    private boolean customElytraCheck(ItemStack stack, Item item, Operation<Boolean> original) {
-        if (item == Items.ELYTRA) {
-            return stack.is(Items.ELYTRA) || stack.getItem() instanceof ElytraItem;
-        }
-        return original.call(stack, item);
-    }
-
-    // === БУСТ СКОРОСТИ РЕАКТИВНЫХ ЭЛИТР ===
-    @Inject(method = "travel", at = @At("RETURN"))
-    private void boostJetElytra(Vec3 travelVector, CallbackInfo ci) {
+    // === РАЗРЕШАЕМ КАСТОМНЫМ ЭЛИТРАМ ЛЕТАТЬ (ванильная физика) ===
+    @ModifyReturnValue(method = "canGlide", at = @At("RETURN"))
+    private boolean allowCustomElytraGlide(boolean original) {
+        if (original) return true;
         LivingEntity self = (LivingEntity)(Object)this;
-        if (!self.isFallFlying()) return;
-
         ItemStack chest = self.getItemBySlot(EquipmentSlot.CHEST);
-        if (!(chest.getItem() instanceof CustomElytraItem elytra) || !elytra.isJet()) return;
-
-        Vec3 motion = self.getDeltaMovement();
-        // Не бустим при полёте вверх — взлетать только фейерверками
-        if (motion.y > 0) return;
-
-        double hSpeed = Math.sqrt(motion.x * motion.x + motion.z * motion.z);
-        if (hSpeed <= 0.001) return;
-
-        // Ванильная крейсерская скорость ≈ 0.9 блоков/тик. В 1.5 раза = 1.35
-        double targetSpeed = 1.35;
-        // Если уже летим быстрее (фейерверк, резкое пикирование) — не мешаем
-        if (hSpeed >= targetSpeed) return;
-
-        // Масштабируем в 1.5 раза, но жёстко ограничиваем потолком 1.35
-        double scale = Math.min(1.5, targetSpeed / hSpeed);
-
-        // ВРЕМЕННОЕ ЛОГИРОВАНИЕ (каждую секунду в консоль IDE)
-        if (self.level().getGameTime() % 20 == 0) {
-            System.out.println("[InfinityBackpack] Jet boost! hSpeed=" + String.format("%.3f", hSpeed)
-                    + " scale=" + String.format("%.3f", scale) + " y=" + String.format("%.3f", motion.y));
-        }
-
-        self.setDeltaMovement(
-                motion.x * scale,
-                motion.y,
-                motion.z * scale
-        );
+        return chest.getItem() instanceof ElytraItem && ElytraItem.isFlyEnabled(chest);
     }
 
     // === ТАЛИСМАН (бессмертие) ===
