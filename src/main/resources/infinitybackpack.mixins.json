@@ -6,7 +6,6 @@
     "AnvilMenuMixin",
     "BlockItemMixin",
     "BlockMixin",
-    "ElytraFlightMixin",
     "EnchantmentMixin",
     "ItemStackMixin",
     "LivingEntityMixin"

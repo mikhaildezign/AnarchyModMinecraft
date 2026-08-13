@@ -32,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public class LivingEntityMixin {
 
+    // === ПОДДЕРЖИВАЕМ ПОЛЁТ ДЛЯ КАСТОМНЫХ ЭЛИТР (сервер) ===
     @WrapOperation(
             method = "updateFallFlying",
             at = @At(
@@ -46,22 +47,44 @@ public class LivingEntityMixin {
         return original.call(stack, item);
     }
 
+    // === БУСТ СКОРОСТИ РЕАКТИВНЫХ ЭЛИТР ===
     @Inject(method = "travel", at = @At("RETURN"))
     private void boostJetElytra(Vec3 travelVector, CallbackInfo ci) {
         LivingEntity self = (LivingEntity)(Object)this;
-        if (self.isFallFlying()) {
-            ItemStack chest = self.getItemBySlot(EquipmentSlot.CHEST);
-            if (chest.getItem() instanceof CustomElytraItem elytra && elytra.isJet()) {
-                Vec3 motion = self.getDeltaMovement();
-                double horizontalSpeed = Math.sqrt(motion.x * motion.x + motion.z * motion.z);
-                if (horizontalSpeed > 0.01 && horizontalSpeed < 1.2) {
-                    double factor = 1.3;
-                    self.setDeltaMovement(motion.x * factor, motion.y, motion.z * factor);
-                }
-            }
+        if (!self.isFallFlying()) return;
+
+        ItemStack chest = self.getItemBySlot(EquipmentSlot.CHEST);
+        if (!(chest.getItem() instanceof CustomElytraItem elytra) || !elytra.isJet()) return;
+
+        Vec3 motion = self.getDeltaMovement();
+        // Не бустим при полёте вверх — взлетать только фейерверками
+        if (motion.y > 0) return;
+
+        double hSpeed = Math.sqrt(motion.x * motion.x + motion.z * motion.z);
+        if (hSpeed <= 0.001) return;
+
+        // Ванильная крейсерская скорость ≈ 0.9 блоков/тик. В 1.5 раза = 1.35
+        double targetSpeed = 1.35;
+        // Если уже летим быстрее (фейерверк, резкое пикирование) — не мешаем
+        if (hSpeed >= targetSpeed) return;
+
+        // Масштабируем в 1.5 раза, но жёстко ограничиваем потолком 1.35
+        double scale = Math.min(1.5, targetSpeed / hSpeed);
+
+        // ВРЕМЕННОЕ ЛОГИРОВАНИЕ (каждую секунду в консоль IDE)
+        if (self.level().getGameTime() % 20 == 0) {
+            System.out.println("[InfinityBackpack] Jet boost! hSpeed=" + String.format("%.3f", hSpeed)
+                    + " scale=" + String.format("%.3f", scale) + " y=" + String.format("%.3f", motion.y));
         }
+
+        self.setDeltaMovement(
+                motion.x * scale,
+                motion.y,
+                motion.z * scale
+        );
     }
 
+    // === ТАЛИСМАН (бессмертие) ===
     @Inject(method = "checkTotemDeathProtection", at = @At("HEAD"), cancellable = true)
     private void onCheckTotemDeathProtection(DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity)(Object)this;
@@ -86,6 +109,7 @@ public class LivingEntityMixin {
         }
     }
 
+    // === ЗАЧАРОВАНИЕ IMPENETRABLE ===
     @ModifyVariable(method = "hurt", at = @At("HEAD"), argsOnly = true)
     private float applyImpenetrable(float amount, DamageSource source) {
         LivingEntity self = (LivingEntity)(Object)this;

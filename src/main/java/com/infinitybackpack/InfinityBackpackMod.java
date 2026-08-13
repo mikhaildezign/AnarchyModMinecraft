@@ -1,5 +1,11 @@
 package com.infinitybackpack;
 
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.commands.Commands;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import com.infinitybackpack.item.SunBootsItem;
 import com.infinitybackpack.item.InfinityArmorItem;
@@ -615,6 +621,26 @@ public class InfinityBackpackMod implements ModInitializer {
                         return 0;
                     })
             );
+        });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(Commands.literal("elytratest")
+                    .requires(source -> source.hasPermission(0))
+                    .executes(context -> {
+                        if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                            Vec3 motion = player.getDeltaMovement();
+                            double hSpeed = Math.sqrt(motion.x * motion.x + motion.z * motion.z);
+                            boolean flying = player.isFallFlying();
+                            ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+                            String itemName = chest.isEmpty() ? "none" : chest.getItem().toString();
+
+                            player.sendSystemMessage(Component.literal(
+                                    "FallFlying: " + flying + " | Item: " + itemName + " | H-Speed: " + String.format("%.3f", hSpeed)
+                            ));
+                            return 1;
+                        }
+                        return 0;
+                    }));
         });
     }
 
