@@ -2,17 +2,20 @@ package com.infinitybackpack.item;
 
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
@@ -21,7 +24,7 @@ public class SunBootsItem extends ArmorItem {
     private final String displayName;
     private final int[] nameGradient;
 
-    public SunBootsItem(Holder<ArmorMaterial> mat, Properties props, String displayName, int[] nameGradient) {
+    public SunBootsItem(Holder mat, Properties props, String displayName, int[] nameGradient) {
         super(mat, Type.BOOTS, props);
         this.displayName = displayName;
         this.nameGradient = nameGradient;
@@ -58,23 +61,29 @@ public class SunBootsItem extends ArmorItem {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
+    private static void addEnchant(Registry<Enchantment> registry, ItemEnchantments.Mutable mutable, Object rawKey, int level) {
+        ResourceKey<Enchantment> key = (ResourceKey<Enchantment>) rawKey;
+        registry.getHolder(key).ifPresent(h -> mutable.set(h, level));
+    }
+
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         if (level.isClientSide || !(entity instanceof Player)) return;
 
         ItemEnchantments current = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         if (current.isEmpty()) {
-            level.registryAccess().registry(Registries.ENCHANTMENT).ifPresent(registry -> {
+            level.registryAccess().registry(Registries.ENCHANTMENT).ifPresent((Registry<Enchantment> registry) -> {
                 ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
 
-                registry.getHolder(Enchantments.PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.BLAST_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.PROJECTILE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.FEATHER_FALLING).ifPresent(h -> enchantments.set(h, 4));
-                registry.getHolder(Enchantments.DEPTH_STRIDER).ifPresent(h -> enchantments.set(h, 4));
-                registry.getHolder(Enchantments.FIRE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.SOUL_SPEED).ifPresent(h -> enchantments.set(h, 4));
-                registry.getHolder(InfinityBackpackMod.IMPENETRABLE).ifPresent(h -> enchantments.set(h, 2));
+                addEnchant(registry, enchantments, Enchantments.PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.BLAST_PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.PROJECTILE_PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.FEATHER_FALLING, 4);
+                addEnchant(registry, enchantments, Enchantments.DEPTH_STRIDER, 4);
+                addEnchant(registry, enchantments, Enchantments.FIRE_PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.SOUL_SPEED, 4);
+                addEnchant(registry, enchantments, InfinityBackpackMod.IMPENETRABLE, 2);
 
                 stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());
             });

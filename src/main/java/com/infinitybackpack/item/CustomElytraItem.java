@@ -1,16 +1,20 @@
 package com.infinitybackpack.item;
 
+import net.fabricmc.fabric.api.entity.event.v1.FabricElytraItem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ElytraItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.gameevent.GameEvent;
 
 import java.util.List;
 
-public class CustomElytraItem extends ElytraItem {
+public class CustomElytraItem extends ElytraItem implements FabricElytraItem {
     private final String displayName;
     private final int[] nameGradient;
     private final List<Component> tooltipLines;
@@ -32,6 +36,30 @@ public class CustomElytraItem extends ElytraItem {
     public boolean isArmored() { return armored; }
     public boolean isUnbreakable() { return unbreakable; }
     public boolean isJet() { return jet; }
+
+    @Override
+    public boolean useCustomElytra(LivingEntity entity, ItemStack chestStack, boolean tickElytra) {
+        // Нерушимые элитры летают всегда, остальные — пока не сломались
+        boolean canFly = unbreakable || chestStack.getDamageValue() < chestStack.getMaxDamage() - 1;
+        if (!canFly) {
+            return false;
+        }
+
+        if (tickElytra) {
+            if (unbreakable) {
+                // Для нерушимых не наносим урон, но шлём game event как ванилла
+                int nextRoll = entity.getFallFlyingTicks() + 1;
+                if (!entity.level().isClientSide && nextRoll % 10 == 0) {
+                    entity.gameEvent(GameEvent.ELYTRA_GLIDE);
+                }
+            } else {
+                // Обычный тик с износом
+                doVanillaElytraTick(entity, chestStack);
+            }
+        }
+
+        return true;
+    }
 
     @Override
     public Component getName(ItemStack stack) {

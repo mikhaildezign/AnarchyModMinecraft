@@ -8,7 +8,7 @@
     "BlockMixin",
     "EnchantmentMixin",
     "ItemStackMixin",
-    "LivingEntityMixin"
+    "ItemEntityMixin"
   ],
   "client": [
     "ElytraLayerMixin"

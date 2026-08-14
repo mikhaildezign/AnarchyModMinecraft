@@ -2,17 +2,20 @@ package com.infinitybackpack.item;
 
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.level.Level;
@@ -21,7 +24,7 @@ public class SunHelmetItem extends ArmorItem {
     private final String displayName;
     private final int[] nameGradient;
 
-    public SunHelmetItem(Holder<ArmorMaterial> mat, Properties props, String displayName, int[] nameGradient) {
+    public SunHelmetItem(Holder mat, Properties props, String displayName, int[] nameGradient) {
         super(mat, Type.HELMET, props);
         this.displayName = displayName;
         this.nameGradient = nameGradient;
@@ -58,21 +61,27 @@ public class SunHelmetItem extends ArmorItem {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
+    private static void addEnchant(Registry<Enchantment> registry, ItemEnchantments.Mutable mutable, Object rawKey, int level) {
+        ResourceKey<Enchantment> key = (ResourceKey<Enchantment>) rawKey;
+        registry.getHolder(key).ifPresent(h -> mutable.set(h, level));
+    }
+
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         if (level.isClientSide || !(entity instanceof Player)) return;
 
         ItemEnchantments current = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         if (current.isEmpty()) {
-            level.registryAccess().registry(Registries.ENCHANTMENT).ifPresent(registry -> {
+            level.registryAccess().registry(Registries.ENCHANTMENT).ifPresent((Registry<Enchantment> registry) -> {
                 ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
 
-                registry.getHolder(Enchantments.PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.BLAST_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.PROJECTILE_PROTECTION).ifPresent(h -> enchantments.set(h, 5));
-                registry.getHolder(Enchantments.AQUA_AFFINITY).ifPresent(h -> enchantments.set(h, 1));
-                registry.getHolder(Enchantments.RESPIRATION).ifPresent(h -> enchantments.set(h, 4));
-                registry.getHolder(InfinityBackpackMod.IMPENETRABLE).ifPresent(h -> enchantments.set(h, 2));
+                addEnchant(registry, enchantments, Enchantments.PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.BLAST_PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.PROJECTILE_PROTECTION, 5);
+                addEnchant(registry, enchantments, Enchantments.AQUA_AFFINITY, 1);
+                addEnchant(registry, enchantments, Enchantments.RESPIRATION, 4);
+                addEnchant(registry, enchantments, InfinityBackpackMod.IMPENETRABLE, 2);
 
                 stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());
             });

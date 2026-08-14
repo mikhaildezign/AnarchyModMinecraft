@@ -30,11 +30,11 @@ import com.infinitybackpack.screen.BackpackMenu;
 import com.infinitybackpack.screen.ExpExchangeMenu;
 import com.infinitybackpack.screen.TntCannonMenu;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
-import net.minecraft.commands.Commands;
+import net.fabricmc.fabric.api.item.v1.EnchantmentEvents;
+import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -50,19 +50,19 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.flag.FeatureFlags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ArmorItem;
@@ -76,52 +76,67 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.item.component.Unbreakable;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import java.util.List;
+import java.util.Optional;
 
 public class InfinityBackpackMod implements ModInitializer {
     public static final String MOD_ID = "infinitybackpack";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public static final ResourceKey<Enchantment> IMPENETRABLE = ResourceKey.create(
+    public static final ResourceKey IMPENETRABLE = ResourceKey.create(
             Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "impenetrable")
     );
 
-    public static final ResourceKey<Enchantment> MAGNETISM = ResourceKey.create(
+    public static final ResourceKey MAGNETISM = ResourceKey.create(
             Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "magnetism")
     );
 
-    public static final ResourceKey<Enchantment> DRILL = ResourceKey.create(
+    public static final ResourceKey DRILL = ResourceKey.create(
             Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "drill")
     );
 
-    public static final MenuType<BackpackMenu> BACKPACK_MENU = Registry.register(
+    public static final ResourceKey AUTOSMELT = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "autosmelt")
+    );
+
+    public static final TagKey<Item> PICKAXES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "pickaxes"));
+    public static final TagKey<Item> SHOVELS_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "shovels"));
+
+    public static final MenuType BACKPACK_MENU = Registry.register(
             BuiltInRegistries.MENU,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "backpack"),
             new MenuType<>(BackpackMenu::new, FeatureFlags.VANILLA_SET)
     );
 
-    public static final MenuType<TntCannonMenu> TNT_CANNON_MENU = Registry.register(
+    public static final MenuType TNT_CANNON_MENU = Registry.register(
             BuiltInRegistries.MENU,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "tnt_cannon"),
             new MenuType<>(TntCannonMenu::new, FeatureFlags.VANILLA_SET)
     );
 
-    public static final MenuType<ExpExchangeMenu> EXP_EXCHANGE_MENU = Registry.register(
+    public static final MenuType EXP_EXCHANGE_MENU = Registry.register(
             BuiltInRegistries.MENU,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "exp_exchange"),
             new MenuType<>(ExpExchangeMenu::new, FeatureFlags.VANILLA_SET)
@@ -135,10 +150,10 @@ public class InfinityBackpackMod implements ModInitializer {
                     .component(DataComponents.CONTAINER, ItemContainerContents.EMPTY))
     );
 
-    public static final EntityType<CustomPrimedTnt> CUSTOM_PRIMED_TNT = Registry.register(
+    public static final EntityType CUSTOM_PRIMED_TNT = Registry.register(
             BuiltInRegistries.ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "custom_primed_tnt"),
-            EntityType.Builder.<CustomPrimedTnt>of(CustomPrimedTnt::new, MobCategory.MISC)
+            EntityType.Builder.of((EntityType<CustomPrimedTnt> type, Level level) -> new CustomPrimedTnt(type, level), MobCategory.MISC)
                     .fireImmune()
                     .sized(0.98F, 0.98F)
                     .clientTrackingRange(8)
@@ -146,10 +161,10 @@ public class InfinityBackpackMod implements ModInitializer {
                     .build("infinitybackpack:custom_primed_tnt")
     );
 
-    public static final EntityType<SnowballClumpProjectile> SNOWBALL_CLUMP_PROJECTILE = Registry.register(
+    public static final EntityType SNOWBALL_CLUMP_PROJECTILE = Registry.register(
             BuiltInRegistries.ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "snowball_clump"),
-            EntityType.Builder.<SnowballClumpProjectile>of(SnowballClumpProjectile::new, MobCategory.MISC)
+            EntityType.Builder.of((EntityType<SnowballClumpProjectile> type, Level level) -> new SnowballClumpProjectile(type, level), MobCategory.MISC)
                     .sized(0.25F, 0.25F)
                     .clientTrackingRange(4)
                     .updateInterval(10)
@@ -230,7 +245,7 @@ public class InfinityBackpackMod implements ModInitializer {
             new TntCannonBlockItem(TNT_CANNON_BLOCK, new Item.Properties())
     );
 
-    public static final BlockEntityType<TntCannonBlockEntity> TNT_CANNON_BLOCK_ENTITY = Registry.register(
+    public static final BlockEntityType TNT_CANNON_BLOCK_ENTITY = Registry.register(
             BuiltInRegistries.BLOCK_ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "tnt_cannon"),
             BlockEntityType.Builder.of(TntCannonBlockEntity::new, TNT_CANNON_BLOCK).build()
@@ -405,7 +420,7 @@ public class InfinityBackpackMod implements ModInitializer {
             List.of(
                     Component.literal("— имеет свойства ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
                             .append(Component.literal("реактивных элитр").withStyle(Style.EMPTY.withColor(0xFF8400)))
-                            .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFFFFFF))),
+                            .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFF8400))),
                     Component.literal("— имеет свойства ").withStyle(Style.EMPTY.withColor(0xFFFFFF))
                             .append(Component.literal("незеритового нагрудника").withStyle(Style.EMPTY.withColor(0xFF8400)))
                             .append(Component.literal(";").withStyle(Style.EMPTY.withColor(0xFFFFFF))),
@@ -507,7 +522,6 @@ public class InfinityBackpackMod implements ModInitializer {
             if (drillLevel <= 0) return;
             if (tool.isEmpty() || !tool.isDamageableItem()) return;
 
-            // Проверяем, не отключён ли бур
             CustomData customData = tool.get(DataComponents.CUSTOM_DATA);
             boolean drillDisabled = false;
             if (customData != null) {
@@ -558,8 +572,6 @@ public class InfinityBackpackMod implements ModInitializer {
                 if (unbreakingLevel > 0) {
                     actualDamage = 0;
                     for (int i = 0; i < extraBlocks; i++) {
-                        // Ванильный шанс избежать: level / (level + 1)
-                        // Ослабляем ещё на 20% (итого 0.7 * 0.8 = 0.56)
                         float avoidChance = (unbreakingLevel / (float)(unbreakingLevel + 1)) * 0.56f;
                         if (level.getRandom().nextFloat() >= avoidChance) {
                             actualDamage++;
@@ -642,20 +654,30 @@ public class InfinityBackpackMod implements ModInitializer {
                         return 0;
                     }));
         });
+
+        EnchantmentEvents.ALLOW_ENCHANTING.register((enchantment, target, context) -> {
+            if (enchantment.is(AUTOSMELT)) {
+                if (target.is(PICKAXES_TAG) || target.is(Items.BOOK)) {
+                    return TriState.TRUE;
+                }
+                return TriState.FALSE;
+            }
+            return TriState.DEFAULT;
+        });
     }
 
     private static Block registerBlock(String name, Block block) {
         return Registry.register(BuiltInRegistries.BLOCK, ResourceLocation.fromNamespaceAndPath(MOD_ID, name), block);
     }
 
-    private static Item registerDynamiteItem(String name, Block block, String displayName, int[] nameGradient, List<Component> tooltip) {
+    private static Item registerDynamiteItem(String name, Block block, String displayName, int[] nameGradient, List tooltip) {
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
                 new DynamiteBlockItem(block, new Item.Properties(), displayName, nameGradient, tooltip));
     }
 
     private static Item registerElytra(String name, Item.Properties properties, String displayName,
-                                       int[] gradient, List<Component> tooltip, boolean armored, boolean unbreakable, boolean jet) {
+                                       int[] gradient, List tooltip, boolean armored, boolean unbreakable, boolean jet) {
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
                 new CustomElytraItem(properties, displayName, gradient, tooltip, armored, unbreakable, jet));
@@ -667,9 +689,9 @@ public class InfinityBackpackMod implements ModInitializer {
                 new com.infinitybackpack.item.ExperienceBottleItem(new Item.Properties(), displayName, gradient, exp, level));
     }
 
-    private static Item registerInfinityArmor(String name, Holder<ArmorMaterial> mat,
+    private static Item registerInfinityArmor(String name, Holder mat,
                                               ArmorItem.Type type, String displayName, int[] gradient,
-                                              Map<ResourceKey<Enchantment>, Integer> enchants) {
+                                              Map enchants) {
         int durability = type.getDurability(37);
         return Registry.register(BuiltInRegistries.ITEM,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
@@ -690,6 +712,16 @@ public class InfinityBackpackMod implements ModInitializer {
         ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
             if (entry.getKey().is(Enchantments.UNBREAKING)) {
+                return entry.getIntValue();
+            }
+        }
+        return 0;
+    }
+
+    public static int getAutoSmeltLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(AUTOSMELT)) {
                 return entry.getIntValue();
             }
         }

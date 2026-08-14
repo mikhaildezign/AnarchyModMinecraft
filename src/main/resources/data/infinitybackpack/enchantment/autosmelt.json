@@ -1,0 +1,22 @@
+{
+  "description": {
+    "translate": "enchantment.infinitybackpack.autosmelt"
+  },
+  "supported_items": "#infinitybackpack:autosmelt",
+  "primary_items": "#infinitybackpack:autosmelt",
+  "weight": 2,
+  "max_level": 1,
+  "min_cost": {
+    "base": 10,
+    "per_level_above_first": 0
+  },
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 0
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {}
+}
