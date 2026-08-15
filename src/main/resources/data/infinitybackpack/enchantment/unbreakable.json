@@ -1,10 +1,9 @@
 {
   "description": {
-    "translate": "enchantment.infinitybackpack.autosmelt"
+    "translate": "enchantment.infinitybackpack.unbreakable"
   },
-  "supported_items": "#infinitybackpack:autosmelt",
-  "primary_items": "#infinitybackpack:autosmelt",
-  "exclusive_set": "minecraft:silk_touch",
+  "supported_items": "#infinitybackpack:unbreakable",
+  "primary_items": "#infinitybackpack:unbreakable",
   "weight": 2,
   "max_level": 1,
   "min_cost": {

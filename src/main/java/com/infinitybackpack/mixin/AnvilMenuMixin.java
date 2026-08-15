@@ -7,6 +7,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.inventory.AnvilMenu;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +40,11 @@ public class AnvilMenuMixin {
                 setEnchantmentLevel(result, InfinityBackpackMod.IMPENETRABLE, 1);
             }
         }
+
+        // Автоплавка + Шёлковое касание: удаляем конфликтующее зачарование из результата
+        if (hasEnchantment(result, InfinityBackpackMod.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
+            removeEnchantment(result, Enchantments.SILK_TOUCH);
+        }
     }
 
     private static boolean hasEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
@@ -61,8 +67,32 @@ public class AnvilMenuMixin {
         return 0;
     }
 
+    private static boolean hasEnchantment(ItemStack stack, ResourceKey<Enchantment> key) {
+        return getEnchantmentLevel(stack, key) > 0;
+    }
+
+    private static void removeEnchantment(ItemStack stack, ResourceKey<Enchantment> key) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(key)) {
+                ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(enchantments);
+                mutable.removeIf(h -> h.is(key));
+                stack.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
+                return;
+            }
+        }
+        ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stored.entrySet()) {
+            if (entry.getKey().is(key)) {
+                ItemEnchantments.Mutable mutable = new ItemEnchantments.Mutable(stored);
+                mutable.removeIf(h -> h.is(key));
+                stack.set(DataComponents.STORED_ENCHANTMENTS, mutable.toImmutable());
+                return;
+            }
+        }
+    }
+
     private static void setEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
-        // Ищем Holder в обычных зачарованиях
         ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
             if (entry.getKey().is(key)) {
@@ -72,8 +102,6 @@ public class AnvilMenuMixin {
                 return;
             }
         }
-
-        // Ищем Holder в stored-зачарованиях (книги)
         ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : stored.entrySet()) {
             if (entry.getKey().is(key)) {

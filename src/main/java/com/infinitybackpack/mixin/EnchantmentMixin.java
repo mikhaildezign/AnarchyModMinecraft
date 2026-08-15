@@ -83,6 +83,9 @@ public class EnchantmentMixin {
             component.append(CommonComponents.SPACE)
                     .append(Component.translatable("enchantment.level." + level).withStyle(ChatFormatting.GRAY));
             cir.setReturnValue(component);
+        } else if (enchantment.is(InfinityBackpackMod.UNBREAKABLE_ENCHANT)) {
+            cir.setReturnValue(Component.translatable("enchantment.infinitybackpack.unbreakable")
+                    .withStyle(ChatFormatting.GRAY));
         }
     }
 }

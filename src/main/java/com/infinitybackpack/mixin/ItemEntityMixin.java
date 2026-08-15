@@ -1,10 +1,13 @@
 package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.InfinityBackpackMod;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.SingleRecipeInput;
@@ -20,7 +23,7 @@ import java.util.Optional;
 @Mixin(ItemEntity.class)
 public class ItemEntityMixin {
 
-    @Inject(method = "<init>(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;)V", at = @At("RETURN"))
+    @Inject(method = "(Lnet/minecraft/world/level/Level;DDDLnet/minecraft/world/item/ItemStack;)V", at = @At("RETURN"))
     private void onInit(Level level, double x, double y, double z, ItemStack stack, CallbackInfo ci) {
         System.out.println("[AUTOSMELT DEBUG] ItemEntity created: " + stack.getItem() + " x" + stack.getCount());
 
@@ -53,6 +56,12 @@ public class ItemEntityMixin {
 
             if (autoSmeltLevel <= 0) continue;
 
+            CustomData customData = tool.get(DataComponents.CUSTOM_DATA);
+            if (customData != null && customData.copyTag().getBoolean("AutoSmeltDisabled")) {
+                System.out.println("[AUTOSMELT DEBUG] AutoSmelt is disabled on this tool, skipping");
+                continue;
+            }
+
             boolean isPickaxe = tool.is(InfinityBackpackMod.PICKAXES_TAG);
             boolean isShovel = tool.is(InfinityBackpackMod.SHOVELS_TAG);
             System.out.println("[AUTOSMELT DEBUG] isPickaxe = " + isPickaxe + ", isShovel = " + isShovel);
@@ -69,6 +78,16 @@ public class ItemEntityMixin {
                     ItemStack smelted = recipeOpt.get().value()
                             .getResultItem(serverLevel.registryAccess()).copy();
                     smelted.setCount(stack.getCount());
+
+                    // Кирка — только руды; Лопата — только стекло (песок)
+                    if (isPickaxe && !InfinityBackpackMod.isOreSmeltingResult(smelted)) {
+                        System.out.println("[AUTOSMELT DEBUG] Pickaxe: result is not an ore, skipping");
+                        continue;
+                    }
+                    if (isShovel && !smelted.is(Items.GLASS)) {
+                        System.out.println("[AUTOSMELT DEBUG] Shovel: result is not glass, skipping");
+                        continue;
+                    }
 
                     boolean shouldSmelt = false;
                     if (isPickaxe && !stack.is(Items.SAND) && !stack.is(Items.RED_SAND)) {

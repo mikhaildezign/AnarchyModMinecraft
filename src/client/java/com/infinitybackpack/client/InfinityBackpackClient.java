@@ -6,14 +6,21 @@ import com.infinitybackpack.client.renderer.ShulkerBoxItemRenderer;
 import com.infinitybackpack.client.screen.BackpackScreen;
 import com.infinitybackpack.client.screen.ExpExchangeScreen;
 import com.infinitybackpack.client.screen.TntCannonScreen;
+import com.infinitybackpack.network.ToggleAutoSmeltPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.item.ItemStack;
 
 public class InfinityBackpackClient implements ClientModInitializer {
     @Override
@@ -25,11 +32,37 @@ public class InfinityBackpackClient implements ClientModInitializer {
         EntityRendererRegistry.register(InfinityBackpackMod.CUSTOM_PRIMED_TNT, CustomPrimedTntRenderer::new);
         EntityRendererRegistry.register(InfinityBackpackMod.SNOWBALL_CLUMP_PROJECTILE, context -> new ThrownItemRenderer<>(context, 1.5f, true));
 
-        // Регистрация кастомного рендерера для рюкзака (3D-модель шалкера с твоей текстурой)
         BuiltinItemRendererRegistry.INSTANCE.register(
                 InfinityBackpackMod.INFINITY_BACKPACK,
                 new ShulkerBoxItemRenderer()
         );
+
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (!world.isClientSide) {
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            }
+
+            if (!Screen.hasControlDown()) {
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            }
+
+            if (Screen.hasShiftDown()) {
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            }
+
+            ItemStack stack = player.getItemInHand(hand);
+            if (stack.isEmpty()) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            int autoSmeltLevel = InfinityBackpackMod.getAutoSmeltLevel(stack);
+            if (autoSmeltLevel <= 0) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            ClientPlayNetworking.send(new ToggleAutoSmeltPayload());
+            return InteractionResultHolder.success(stack);
+        });
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             if (stack.is(InfinityBackpackMod.SUN_HELMET)) {

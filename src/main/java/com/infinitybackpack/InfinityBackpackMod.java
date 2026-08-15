@@ -1,5 +1,10 @@
 package com.infinitybackpack;
 
+import java.util.Map;
+import java.util.HashMap;
+import com.infinitybackpack.network.ToggleAutoSmeltPayload;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,6 +35,7 @@ import com.infinitybackpack.screen.BackpackMenu;
 import com.infinitybackpack.screen.ExpExchangeMenu;
 import com.infinitybackpack.screen.TntCannonMenu;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -100,6 +106,8 @@ import java.util.Optional;
 public class InfinityBackpackMod implements ModInitializer {
     public static final String MOD_ID = "infinitybackpack";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    private static final Map<java.util.UUID, Long> lastUnbreakableWarnTick = new HashMap<>();
+    private static final Map<java.util.UUID, BlockPos> lastUnbreakableWarnPos = new HashMap<>();
 
     public static final ResourceKey IMPENETRABLE = ResourceKey.create(
             Registries.ENCHANTMENT,
@@ -119,6 +127,11 @@ public class InfinityBackpackMod implements ModInitializer {
     public static final ResourceKey AUTOSMELT = ResourceKey.create(
             Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "autosmelt")
+    );
+
+    public static final ResourceKey UNBREAKABLE_ENCHANT = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "unbreakable")
     );
 
     public static final TagKey<Item> PICKAXES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "pickaxes"));
@@ -514,6 +527,43 @@ public class InfinityBackpackMod implements ModInitializer {
             return true;
         });
 
+        PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
+            if (level.isClientSide) return true;
+
+            ItemStack tool = player.getMainHandItem();
+            if (tool.isEmpty()) return true;
+
+            int unbreakableLevel = getUnbreakableLevel(tool);
+            if (unbreakableLevel <= 0) return true;
+
+            int remaining = tool.getMaxDamage() - tool.getDamageValue();
+            if (remaining > 50) return true;
+
+            // Восстанавливаем прочность до 50, чтобы никогда не опустилась ниже
+            tool.setDamageValue(tool.getMaxDamage() - 50);
+
+            long currentTick = level.getGameTime();
+            long lastTick = lastUnbreakableWarnTick.getOrDefault(player.getUUID(), 0L);
+            BlockPos lastPos = lastUnbreakableWarnPos.get(player.getUUID());
+
+            // Звук и сообщение только при новом нажатии ЛКМ (позиция другая или прошло > 3 тиков)
+            if (!pos.equals(lastPos) || currentTick - lastTick > 3) {
+                Component msg = Component.literal("Ваш инструмент почти ")
+                        .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                        .append(Component.literal("сломан").withStyle(Style.EMPTY.withColor(0xFF0000)))
+                        .append(Component.literal(", почините его!").withStyle(Style.EMPTY.withColor(0xFFFFFF)));
+                player.displayClientMessage(msg, true);
+
+                level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        SoundEvents.ANVIL_DESTROY, SoundSource.PLAYERS, 0.6f, 1.0f);
+
+                lastUnbreakableWarnTick.put(player.getUUID(), currentTick);
+                lastUnbreakableWarnPos.put(player.getUUID(), pos.immutable());
+            }
+
+            return false;
+        });
+
         PlayerBlockBreakEvents.AFTER.register((level, player, pos, state, blockEntity) -> {
             if (level.isClientSide) return;
 
@@ -664,6 +714,31 @@ public class InfinityBackpackMod implements ModInitializer {
             }
             return TriState.DEFAULT;
         });
+
+        PayloadTypeRegistry.playC2S().register(ToggleAutoSmeltPayload.TYPE, ToggleAutoSmeltPayload.CODEC);
+
+        ServerPlayNetworking.registerGlobalReceiver(ToggleAutoSmeltPayload.TYPE, (payload, context) -> {
+            ItemStack stack = context.player().getMainHandItem();
+            if (stack.isEmpty()) return;
+
+            int autoSmeltLevel = getAutoSmeltLevel(stack);
+            if (autoSmeltLevel <= 0) return;
+
+            CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+            CompoundTag tag = customData != null ? customData.copyTag() : new CompoundTag();
+            boolean currentlyDisabled = tag.getBoolean("AutoSmeltDisabled");
+            tag.putBoolean("AutoSmeltDisabled", !currentlyDisabled);
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+
+            boolean nowDisabled = !currentlyDisabled;
+            Component message = nowDisabled
+                    ? createDrillToggleMessage("Автоплавка выключена", 0x8B0000, 0xFF0000)
+                    : createDrillToggleMessage("Автоплавка включена", 0x006400, 0x00FF00);
+            context.player().displayClientMessage(message, true);
+
+            context.player().level().playSound(null, context.player().getX(), context.player().getY(), context.player().getZ(),
+                    SoundEvents.UI_BUTTON_CLICK, SoundSource.PLAYERS, 0.5f, nowDisabled ? 0.5f : 1.5f);
+        });
     }
 
     private static Block registerBlock(String name, Block block) {
@@ -728,6 +803,16 @@ public class InfinityBackpackMod implements ModInitializer {
         return 0;
     }
 
+    public static int getUnbreakableLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(UNBREAKABLE_ENCHANT)) {
+                return entry.getIntValue();
+            }
+        }
+        return 0;
+    }
+
     public static String getEnchantmentId(Enchantment enchantment) {
         var contents = enchantment.description().getContents();
         if (contents instanceof TranslatableContents tc) {
@@ -750,6 +835,13 @@ public class InfinityBackpackMod implements ModInitializer {
         boolean result = "infinitybackpack:magnetism".equals(getEnchantmentId(enchantment));
         System.out.println("[DEBUG] isMagnetism = " + result);
         return result;
+    }
+
+    public static boolean isOreSmeltingResult(ItemStack stack) {
+        return stack.is(Items.IRON_INGOT) || stack.is(Items.GOLD_INGOT) || stack.is(Items.COPPER_INGOT)
+                || stack.is(Items.NETHERITE_SCRAP) || stack.is(Items.QUARTZ)
+                || stack.is(Items.COAL) || stack.is(Items.REDSTONE) || stack.is(Items.LAPIS_LAZULI)
+                || stack.is(Items.DIAMOND) || stack.is(Items.EMERALD);
     }
 
     private static Component createDrillToggleMessage(String text, int darkColor, int brightColor) {
