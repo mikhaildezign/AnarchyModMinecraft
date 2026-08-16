@@ -3,16 +3,18 @@ package com.infinitybackpack.mixin;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.LingeringPotionItem;
 import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.SplashPotionItem;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.function.Consumer;
 
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
@@ -29,23 +31,24 @@ public class ItemStackMixin {
         return original;
     }
 
-    @ModifyVariable(
-            method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/entity/EquipmentSlot;)V",
+    @Inject(
+            method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
             at = @At("HEAD"),
-            ordinal = 0
+            cancellable = true
     )
-    private int onHurtAndBreak(int amount, ServerLevel level, LivingEntity entity, EquipmentSlot slot) {
-        if (!(entity instanceof Player)) return amount;
-        if (slot != EquipmentSlot.MAINHAND) return amount;
+    private void onHurtAndBreak(int amount, ServerLevel level, ServerPlayer player, Consumer<Item> onBreak, CallbackInfo ci) {
+        if (player == null) return;
 
         ItemStack self = (ItemStack)(Object)this;
+        // Проверяем, что предмет именно в основной руке (как было в старом коде)
+        if (player.getMainHandItem() != self) return;
+
         int unbreakableLevel = InfinityBackpackMod.getUnbreakableLevel(self);
         if (unbreakableLevel > 0) {
             int remaining = self.getMaxDamage() - self.getDamageValue();
             if (remaining <= 50) {
-                return 0; // Не наносим урон предмету
+                ci.cancel(); // Отменяем весь метод hurtAndBreak — урон не наносится
             }
         }
-        return amount;
     }
 }

@@ -39,15 +39,30 @@ public class BlockMixin {
             cancellable = true
     )
     private static void onDropResources(BlockState state, Level level, BlockPos pos, BlockEntity blockEntity, Entity entity, ItemStack tool, CallbackInfo ci) {
-        if (level.isClientSide || !(entity instanceof ServerPlayer player) || !hasMagnetism(tool)) {
+        if (level.isClientSide || !(entity instanceof ServerPlayer)) {
+            return;
+        }
+        ServerPlayer player = (ServerPlayer) entity;
+
+        boolean hasMagnetism = hasMagnetism(tool);
+        boolean hasFilter = InfinityBackpackMod.getFilterLevel(tool) > 0;
+
+        if (!hasMagnetism && !hasFilter) {
             return;
         }
 
         List<ItemStack> drops = Block.getDrops(state, (ServerLevel) level, pos, blockEntity, entity, tool);
         applyAutoSmelt((ServerLevel) level, tool, drops);
+        applyFilter(player, tool, drops);
 
-        for (ItemStack drop : drops) {
-            if (!player.getInventory().add(drop)) {
+        if (hasMagnetism) {
+            for (ItemStack drop : drops) {
+                if (!player.getInventory().add(drop)) {
+                    Block.popResource(level, pos, drop);
+                }
+            }
+        } else {
+            for (ItemStack drop : drops) {
                 Block.popResource(level, pos, drop);
             }
         }
@@ -107,5 +122,10 @@ public class BlockMixin {
                 }
             }
         }
+    }
+
+    private static void applyFilter(ServerPlayer player, ItemStack tool, List<ItemStack> drops) {
+        if (InfinityBackpackMod.getFilterLevel(tool) <= 0) return;
+        drops.removeIf(drop -> InfinityBackpackMod.isItemFilteredForPlayer(player, drop));
     }
 }

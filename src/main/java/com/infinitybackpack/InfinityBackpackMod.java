@@ -1,5 +1,14 @@
 package com.infinitybackpack;
 
+import java.util.UUID;
+import net.minecraft.network.chat.MutableComponent;
+import java.util.ArrayList;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import java.util.Map;
 import java.util.HashMap;
 import com.infinitybackpack.network.ToggleAutoSmeltPayload;
@@ -106,6 +115,7 @@ import java.util.Optional;
 public class InfinityBackpackMod implements ModInitializer {
     public static final String MOD_ID = "infinitybackpack";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    private static final Map<UUID, List<String>> PLAYER_FILTERS = new HashMap<>();
     private static final Map<java.util.UUID, Long> lastUnbreakableWarnTick = new HashMap<>();
     private static final Map<java.util.UUID, BlockPos> lastUnbreakableWarnPos = new HashMap<>();
 
@@ -134,8 +144,15 @@ public class InfinityBackpackMod implements ModInitializer {
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "unbreakable")
     );
 
+    public static final ResourceKey<Enchantment> FILTER = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "filter")
+    );
+
     public static final TagKey<Item> PICKAXES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "pickaxes"));
     public static final TagKey<Item> SHOVELS_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "shovels"));
+    public static final TagKey<Item> HOES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "hoes"));
+    public static final TagKey<Item> AXES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "axes"));
 
     public static final MenuType BACKPACK_MENU = Registry.register(
             BuiltInRegistries.MENU,
@@ -622,7 +639,7 @@ public class InfinityBackpackMod implements ModInitializer {
                 if (unbreakingLevel > 0) {
                     actualDamage = 0;
                     for (int i = 0; i < extraBlocks; i++) {
-                        float avoidChance = (unbreakingLevel / (float)(unbreakingLevel + 1)) * 0.56f;
+                        float avoidChance = (unbreakingLevel / (float) (unbreakingLevel + 1)) * 0.56f;
                         if (level.getRandom().nextFloat() >= avoidChance) {
                             actualDamage++;
                         }
@@ -712,6 +729,12 @@ public class InfinityBackpackMod implements ModInitializer {
                 }
                 return TriState.FALSE;
             }
+            if (enchantment.is(FILTER)) {
+                if (target.is(PICKAXES_TAG) || target.is(SHOVELS_TAG) || target.is(HOES_TAG) || target.is(AXES_TAG) || target.is(Items.BOOK)) {
+                    return TriState.TRUE;
+                }
+                return TriState.FALSE;
+            }
             return TriState.DEFAULT;
         });
 
@@ -738,6 +761,94 @@ public class InfinityBackpackMod implements ModInitializer {
 
             context.player().level().playSound(null, context.player().getX(), context.player().getY(), context.player().getZ(),
                     SoundEvents.UI_BUTTON_CLICK, SoundSource.PLAYERS, 0.5f, nowDisabled ? 0.5f : 1.5f);
+        });
+
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(Commands.literal("filter")
+                    .then(Commands.literal("check")
+                            .executes(context -> {
+                                ServerPlayer player = context.getSource().getPlayerOrException();
+                                ItemStack tool = player.getMainHandItem();
+
+                                if (getFilterLevel(tool) <= 0) {
+                                    player.displayClientMessage(
+                                            Component.literal("В вашем инструменте нет зачарования Фильтр!")
+                                                    .withStyle(Style.EMPTY.withColor(0xFF0000)), false);
+                                    return 0;
+                                }
+
+                                List<Item> filters = getPlayerFilterItems(player);
+                                if (filters.isEmpty()) {
+                                    player.displayClientMessage(
+                                            Component.literal("У вас нет отключённых предметов для выпадения.")
+                                                    .withStyle(Style.EMPTY.withColor(0xAAAAAA)), false);
+                                } else {
+                                    for (Item item : filters) {
+                                        MutableComponent itemName = Component.literal(item.getDefaultInstance().getHoverName().getString());
+                                        Component msg = Component.literal("У вас отключён/а для выпадение - ")
+                                                .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                                                .append(itemName.withStyle(Style.EMPTY.withColor(0xFF0000)))
+                                                .append(Component.literal("!").withStyle(Style.EMPTY.withColor(0xFFFFFF)));
+                                        player.displayClientMessage(msg, false);
+                                    }
+                                }
+                                return 1;
+                            }))
+                    .then(Commands.literal("set")
+                            .then(Commands.argument("item", StringArgumentType.greedyString())
+                                    .suggests((context, builder) -> {
+                                        String remaining = builder.getRemaining().toLowerCase();
+                                        for (Item item : BuiltInRegistries.ITEM) {
+                                            String translated = item.getDefaultInstance().getHoverName().getString();
+                                            if (translated.toLowerCase().startsWith(remaining)) {
+                                                builder.suggest(translated);
+                                            }
+                                        }
+                                        return builder.buildFuture();
+                                    })
+                                    .executes(context -> {
+                                        ServerPlayer player = context.getSource().getPlayerOrException();
+                                        ItemStack tool = player.getMainHandItem();
+
+                                        if (getFilterLevel(tool) <= 0) {
+                                            player.displayClientMessage(
+                                                    Component.literal("В вашем инструменте нет зачарования Фильтр!")
+                                                            .withStyle(Style.EMPTY.withColor(0xFF0000)), false);
+                                            return 0;
+                                        }
+
+                                        String input = StringArgumentType.getString(context, "item");
+                                        Item targetItem = findItemByTranslatedName(input);
+
+                                        if (targetItem == null) {
+                                            player.displayClientMessage(
+                                                    Component.literal("Предмет не найден!")
+                                                            .withStyle(Style.EMPTY.withColor(0xFF0000)), false);
+                                            return 0;
+                                        }
+
+                                        boolean removed = togglePlayerFilterItem(player, targetItem);
+                                        MutableComponent itemName = Component.literal(targetItem.getDefaultInstance().getHoverName().getString());
+
+                                        if (removed) {
+                                            Component msg = Component.literal("Вы включили для выпадение - ")
+                                                    .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                                                    .append(itemName.withStyle(Style.EMPTY.withColor(0x00FF00)))
+                                                    .append(Component.literal("!").withStyle(Style.EMPTY.withColor(0xFFFFFF)));
+                                            player.displayClientMessage(msg, false);
+                                            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                                                    SoundEvents.BUNDLE_REMOVE_ONE, SoundSource.PLAYERS, 2.0f, 1.0f);
+                                        } else {
+                                            Component msg = Component.literal("Вы отключили для выпадение - ")
+                                                    .withStyle(Style.EMPTY.withColor(0xFFFFFF))
+                                                    .append(itemName.withStyle(Style.EMPTY.withColor(0xFF0000)))
+                                                    .append(Component.literal("!").withStyle(Style.EMPTY.withColor(0xFFFFFF)));
+                                            player.displayClientMessage(msg, false);
+                                            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                                                    SoundEvents.BUNDLE_INSERT, SoundSource.PLAYERS, 2.0f, 1.0f);
+                                        }
+                                        return 1;
+                                    }))));
         });
     }
 
@@ -871,5 +982,56 @@ public class InfinityBackpackMod implements ModInitializer {
         int g = Math.round(g1 + (g2 - g1) * ratio);
         int b = Math.round(b1 + (b2 - b1) * ratio);
         return (r << 16) | (g << 8) | b;
+    }
+
+    public static int getFilterLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(FILTER)) {
+                return entry.getIntValue();
+            }
+        }
+        return 0;
+    }
+
+    public static List<Item> getPlayerFilterItems(ServerPlayer player) {
+        List<Item> items = new ArrayList<>();
+        List<String> ids = PLAYER_FILTERS.get(player.getUUID());
+        if (ids == null) return items;
+        for (String id : ids) {
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(id));
+            if (item != null) items.add(item);
+        }
+        return items;
+    }
+
+    public static boolean togglePlayerFilterItem(ServerPlayer player, Item item) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
+        String idStr = id.toString();
+        List<String> list = PLAYER_FILTERS.computeIfAbsent(player.getUUID(), k -> new ArrayList<>());
+        if (list.contains(idStr)) {
+            list.remove(idStr);
+            if (list.isEmpty()) PLAYER_FILTERS.remove(player.getUUID());
+            return true;
+        } else {
+            list.add(idStr);
+            return false;
+        }
+    }
+
+    public static boolean isItemFilteredForPlayer(ServerPlayer player, ItemStack drop) {
+        List<String> list = PLAYER_FILTERS.get(player.getUUID());
+        if (list == null) return false;
+        String dropId = BuiltInRegistries.ITEM.getKey(drop.getItem()).toString();
+        return list.contains(dropId);
+    }
+
+    private static Item findItemByTranslatedName(String name) {
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (item.getDefaultInstance().getHoverName().getString().equalsIgnoreCase(name)) {
+                return item;
+            }
+        }
+        return null;
     }
 }
