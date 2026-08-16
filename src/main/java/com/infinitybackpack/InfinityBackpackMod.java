@@ -1,5 +1,18 @@
 package com.infinitybackpack;
 
+import com.infinitybackpack.item.StasisItem;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import org.joml.Vector3f;
+import java.util.concurrent.CopyOnWriteArrayList;
+import com.infinitybackpack.item.InfinityPickaxeItem;
+import com.infinitybackpack.item.InfinityShovelItem;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.Tiers;
 import java.util.UUID;
 import net.minecraft.network.chat.MutableComponent;
 import java.util.ArrayList;
@@ -391,6 +404,41 @@ public class InfinityBackpackMod implements ModInitializer {
                     IMPENETRABLE, 2
             ));
 
+    public static final Item INFINITY_PICKAXE = registerInfinityPickaxe("infinity_pickaxe", "Кирка Infinity",
+            new int[]{0x006400, 0x00FF00, 0x006400},
+            Map.of(
+                    Enchantments.EFFICIENCY, 10,
+                    Enchantments.FORTUNE, 6,
+                    Enchantments.UNBREAKING, 8,
+                    Enchantments.MENDING, 1,
+                    DRILL, 2,
+                    MAGNETISM, 1,
+                    AUTOSMELT, 1,
+                    UNBREAKABLE_ENCHANT, 1,
+                    FILTER, 1
+            ));
+
+    public static final Item INFINITY_SHOVEL = registerInfinityShovel("infinity_shovel", "Лопата Infinity",
+            new int[]{0x006400, 0x00FF00, 0x006400},
+            Map.of(
+                    Enchantments.EFFICIENCY, 10,
+                    Enchantments.FORTUNE, 5,
+                    Enchantments.UNBREAKING, 5,
+                    Enchantments.MENDING, 1,
+                    DRILL, 2,
+                    MAGNETISM, 1,
+                    UNBREAKABLE_ENCHANT, 1,
+                    FILTER, 1
+            ));
+
+    public static final Item STASIS = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(MOD_ID, "stasis"),
+            new StasisItem(new Item.Properties().stacksTo(64))
+    );
+
+    public static final List<StasisZone> ACTIVE_STASIS_ZONES = new CopyOnWriteArrayList<>();
+
     private static final ItemAttributeModifiers TALISMAN_ATTRIBUTES = ItemAttributeModifiers.builder()
             .add(Attributes.MOVEMENT_SPEED, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "talisman_speed"), 0.4, AttributeModifier.Operation.ADD_MULTIPLIED_BASE), EquipmentSlotGroup.OFFHAND)
             .add(Attributes.ATTACK_DAMAGE, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(MOD_ID, "talisman_damage"), 0.4, AttributeModifier.Operation.ADD_MULTIPLIED_BASE), EquipmentSlotGroup.OFFHAND)
@@ -520,6 +568,9 @@ public class InfinityBackpackMod implements ModInitializer {
             content.accept(INFINITY_LEGGINGS);
             content.accept(INFINITY_BOOTS);
             content.accept(SUN_BOOTS);
+            content.accept(INFINITY_PICKAXE);
+            content.accept(INFINITY_SHOVEL);
+            content.accept(STASIS);
         });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
@@ -655,36 +706,20 @@ public class InfinityBackpackMod implements ModInitializer {
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!player.isShiftKeyDown() || world.isClientSide) {
+            if (world.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
                 return InteractionResultHolder.pass(player.getItemInHand(hand));
             }
-
             ItemStack stack = player.getItemInHand(hand);
-            if (stack.isEmpty()) {
+            if (!stack.is(Items.ENDER_PEARL) && !stack.is(Items.CHORUS_FRUIT)) {
                 return InteractionResultHolder.pass(stack);
             }
-
-            int drillLevel = getDrillLevel(stack);
-            if (drillLevel <= 0) {
-                return InteractionResultHolder.pass(stack);
+            if (isPlayerInAnyStasis(serverPlayer)) {
+                player.displayClientMessage(
+                        Component.literal("Вы не можете здесь активировать данный предмет!")
+                                .withStyle(Style.EMPTY.withColor(0xFFFFFF)), false);
+                return InteractionResultHolder.fail(stack);
             }
-
-            CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-            CompoundTag tag = customData != null ? customData.copyTag() : new CompoundTag();
-            boolean currentlyDisabled = tag.getBoolean("DrillDisabled");
-            tag.putBoolean("DrillDisabled", !currentlyDisabled);
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-
-            boolean nowDisabled = !currentlyDisabled;
-            Component message = nowDisabled
-                    ? createDrillToggleMessage("Бур отключён", 0x8B0000, 0xFF0000)
-                    : createDrillToggleMessage("Бур включён", 0x006400, 0x00FF00);
-            player.displayClientMessage(message, true);
-
-            world.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.UI_BUTTON_CLICK, SoundSource.PLAYERS, 0.5f, nowDisabled ? 0.5f : 1.5f);
-
-            return InteractionResultHolder.success(stack);
+            return InteractionResultHolder.pass(stack);
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -849,6 +884,54 @@ public class InfinityBackpackMod implements ModInitializer {
                                         }
                                         return 1;
                                     }))));
+        });
+
+        // === СЕРВЕРНЫЙ ТИК СТАНОВ ===
+        ServerTickEvents.START_SERVER_TICK.register(server -> {
+            for (ServerLevel level : server.getAllLevels()) {
+                long currentTick = level.getGameTime();
+
+                // Удаляем истёкшие зоны этого мира
+                ACTIVE_STASIS_ZONES.removeIf(zone -> zone.level() == level && zone.isExpired(currentTick));
+
+                // Спавним частицы для активных зон
+                for (StasisZone zone : ACTIVE_STASIS_ZONES) {
+                    if (zone.level() == level) spawnStasisParticles(zone);
+                }
+
+                // Накладываем/снимаем Замедление
+                for (ServerPlayer player : level.players()) {
+                    boolean shouldSlow = ACTIVE_STASIS_ZONES.stream()
+                            .filter(z -> z.level() == level)
+                            .anyMatch(z -> z.isInside(player.getX(), player.getY(), player.getZ()) && !z.activator().equals(player.getUUID()));
+
+                    if (shouldSlow) {
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, true));
+                    } else {
+                        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+                    }
+                }
+            }
+        });
+
+// === БЛОКИРОВКА ЭНДЕР-ЖЕМЧУГА И ХОРУСА В СТАНЕ ===
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (world.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
+                return InteractionResultHolder.pass(player.getItemInHand(hand));
+            }
+
+            ItemStack stack = player.getItemInHand(hand);
+            if (!stack.is(Items.ENDER_PEARL) && !stack.is(Items.CHORUS_FRUIT)) {
+                return InteractionResultHolder.pass(stack);
+            }
+
+            if (isPlayerInAnyStasis(serverPlayer)) {
+                player.displayClientMessage(
+                        Component.literal("Вы не можете здесь активировать данный предмет!")
+                                .withStyle(Style.EMPTY.withColor(0xFFFFFF)), true);
+                return InteractionResultHolder.fail(stack);
+            }
+            return InteractionResultHolder.pass(stack);
         });
     }
 
@@ -1033,5 +1116,71 @@ public class InfinityBackpackMod implements ModInitializer {
             }
         }
         return null;
+    }
+
+    private static Item registerInfinityPickaxe(String name, String displayName, int[] gradient, Map<ResourceKey<Enchantment>, Integer> enchants) {
+        return Registry.register(BuiltInRegistries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
+                new InfinityPickaxeItem(Tiers.NETHERITE, new Item.Properties()
+                        .attributes(PickaxeItem.createAttributes(Tiers.NETHERITE, 1.0F, -2.8F)),
+                        displayName, gradient, enchants));
+    }
+
+    private static Item registerInfinityShovel(String name, String displayName, int[] gradient, Map<ResourceKey<Enchantment>, Integer> enchants) {
+        return Registry.register(BuiltInRegistries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
+                new InfinityShovelItem(Tiers.NETHERITE, new Item.Properties()
+                        .attributes(ShovelItem.createAttributes(Tiers.NETHERITE, 1.5F, -3.0F)),
+                        displayName, gradient, enchants));
+    }
+
+    public static void addStasisZone(ServerLevel level, BlockPos center, long endTick, UUID activator) {
+        ACTIVE_STASIS_ZONES.add(new StasisZone(level, center, endTick, activator));
+    }
+
+    public static boolean isPlayerInAnyStasis(ServerPlayer player) {
+        for (StasisZone zone : ACTIVE_STASIS_ZONES) {
+            if (zone.level() == player.serverLevel() && zone.isInside(player.getX(), player.getY(), player.getZ())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void spawnStasisParticles(StasisZone zone) {
+        ServerLevel level = zone.level();
+        BlockPos c = zone.center();
+        int r = 15;
+        DustParticleOptions white = new DustParticleOptions(new Vector3f(1.0f, 1.0f, 1.0f), 1.0f);
+
+        // 4 вертикальные линии по углам куба
+        for (int y = -r; y <= r; y += 2) {
+            level.sendParticles(white, c.getX() - r, c.getY() + y, c.getZ() - r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + r, c.getY() + y, c.getZ() - r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() - r, c.getY() + y, c.getZ() + r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + r, c.getY() + y, c.getZ() + r, 1, 0, 0, 0, 0);
+        }
+
+        // Горизонтальные линии сверху и снизу
+        for (int i = -r; i <= r; i += 2) {
+            level.sendParticles(white, c.getX() + i, c.getY() - r, c.getZ() - r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + i, c.getY() - r, c.getZ() + r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() - r, c.getY() - r, c.getZ() + i, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + r, c.getY() - r, c.getZ() + i, 1, 0, 0, 0, 0);
+
+            level.sendParticles(white, c.getX() + i, c.getY() + r, c.getZ() - r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + i, c.getY() + r, c.getZ() + r, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() - r, c.getY() + r, c.getZ() + i, 1, 0, 0, 0, 0);
+            level.sendParticles(white, c.getX() + r, c.getY() + r, c.getZ() + i, 1, 0, 0, 0, 0);
+        }
+    }
+
+    public record StasisZone(ServerLevel level, BlockPos center, long endTick, UUID activator) {
+        public boolean isExpired(long currentTick) {
+            return currentTick >= endTick;
+        }
+        public boolean isInside(double x, double y, double z) {
+            return Math.abs(x - center.getX()) <= 15 && Math.abs(y - center.getY()) <= 15 && Math.abs(z - center.getZ()) <= 15;
+        }
     }
 }

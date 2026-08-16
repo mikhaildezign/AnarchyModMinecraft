@@ -8,7 +8,9 @@
     "BlockMixin",
     "EnchantmentMixin",
     "ItemStackMixin",
-    "ItemEntityMixin"
+    "ItemEntityMixin",
+    "EnderpearlItemMixin",
+    "ChorusFruitItemMixin"
   ],
   "client": [
     "ElytraLayerMixin"

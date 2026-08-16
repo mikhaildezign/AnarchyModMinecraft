@@ -90,8 +90,8 @@ public class BlockMixin {
             return;
         }
 
-        boolean isPickaxe = tool.is(InfinityBackpackMod.PICKAXES_TAG);
-        boolean isShovel = tool.is(InfinityBackpackMod.SHOVELS_TAG);
+        boolean isPickaxe = tool.is(InfinityBackpackMod.PICKAXES_TAG) || tool.getItem() instanceof net.minecraft.world.item.PickaxeItem;
+        boolean isShovel = tool.is(InfinityBackpackMod.SHOVELS_TAG) || tool.getItem() instanceof net.minecraft.world.item.ShovelItem;
         if (!isPickaxe && !isShovel) return;
 
         for (int i = 0; i < drops.size(); i++) {

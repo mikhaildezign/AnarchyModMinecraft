@@ -80,6 +80,7 @@ public class SunHelmetItem extends ArmorItem {
                 addEnchant(registry, enchantments, Enchantments.BLAST_PROTECTION, 5);
                 addEnchant(registry, enchantments, Enchantments.PROJECTILE_PROTECTION, 5);
                 addEnchant(registry, enchantments, Enchantments.AQUA_AFFINITY, 1);
+                addEnchant(registry, enchantments, Enchantments.FIRE_PROTECTION, 5);
                 addEnchant(registry, enchantments, Enchantments.RESPIRATION, 4);
                 addEnchant(registry, enchantments, InfinityBackpackMod.IMPENETRABLE, 2);
 
