@@ -23,7 +23,7 @@ public class ChorusFruitItemMixin {
             player.displayClientMessage(
                     Component.literal("Вы не можете здесь активировать данный предмет!")
                             .withStyle(Style.EMPTY.withColor(0xFFFFFF)), false);
-            cir.setReturnValue(stack); // Предмет не тратится
+            cir.setReturnValue(stack);
         }
     }
 }

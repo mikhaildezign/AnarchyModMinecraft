@@ -1,5 +1,11 @@
 package com.infinitybackpack;
 
+import com.infinitybackpack.item.CustomPotionItem;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import com.infinitybackpack.item.StasisItem;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -437,6 +443,27 @@ public class InfinityBackpackMod implements ModInitializer {
             new StasisItem(new Item.Properties().stacksTo(64))
     );
 
+    // === УЛУЧШЕННЫЕ ЗЕЛЬЯ ===
+    public static final Holder<Potion> ENHANCED_STRENGTH_3MIN_POTION = registerPotion("enhanced_strength_3min",
+            new Potion("enhanced_strength_3min", new MobEffectInstance(MobEffects.DAMAGE_BOOST, 3600, 2)));
+    public static final Item ENHANCED_STRENGTH_3MIN = registerPotionItem("enhanced_strength_3min", "Улучшенное зелье силы",
+            new int[]{0x8B0000, 0xFF0000, 0x8B0000}, ENHANCED_STRENGTH_3MIN_POTION, 0xFFFF00);
+
+    public static final Holder<Potion> ENHANCED_STRENGTH_6MIN_POTION = registerPotion("enhanced_strength_6min",
+            new Potion("enhanced_strength_6min", new MobEffectInstance(MobEffects.DAMAGE_BOOST, 7200, 2)));
+    public static final Item ENHANCED_STRENGTH_6MIN = registerPotionItem("enhanced_strength_6min", "Улучшенное зелье силы",
+            new int[]{0x8B0000, 0xFF0000, 0x8B0000}, ENHANCED_STRENGTH_6MIN_POTION, 0xFFFF00);
+
+    public static final Holder<Potion> ENHANCED_SWIFTNESS_3MIN_POTION = registerPotion("enhanced_swiftness_3min",
+            new Potion("enhanced_swiftness_3min", new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 3600, 2)));
+    public static final Item ENHANCED_SWIFTNESS_3MIN = registerPotionItem("enhanced_swiftness_3min", "Улучшенное зелье скорости",
+            new int[]{0x00008B, 0x00BFFF, 0x00008B}, ENHANCED_SWIFTNESS_3MIN_POTION, 0x00BFFF);
+
+    public static final Holder<Potion> ENHANCED_SWIFTNESS_6MIN_POTION = registerPotion("enhanced_swiftness_6min",
+            new Potion("enhanced_swiftness_6min", new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 7200, 2)));
+    public static final Item ENHANCED_SWIFTNESS_6MIN = registerPotionItem("enhanced_swiftness_6min", "Улучшенное зелье скорости",
+            new int[]{0x00008B, 0x00BFFF, 0x00008B}, ENHANCED_SWIFTNESS_6MIN_POTION, 0x00BFFF);
+
     public static final List<StasisZone> ACTIVE_STASIS_ZONES = new CopyOnWriteArrayList<>();
 
     private static final ItemAttributeModifiers TALISMAN_ATTRIBUTES = ItemAttributeModifiers.builder()
@@ -571,6 +598,10 @@ public class InfinityBackpackMod implements ModInitializer {
             content.accept(INFINITY_PICKAXE);
             content.accept(INFINITY_SHOVEL);
             content.accept(STASIS);
+            content.accept(ENHANCED_STRENGTH_3MIN);
+            content.accept(ENHANCED_STRENGTH_6MIN);
+            content.accept(ENHANCED_SWIFTNESS_3MIN);
+            content.accept(ENHANCED_SWIFTNESS_6MIN);
         });
 
         PlayerBlockBreakEvents.BEFORE.register((level, player, pos, state, blockEntity) -> {
@@ -703,23 +734,6 @@ public class InfinityBackpackMod implements ModInitializer {
                     tool.hurtAndBreak(actualDamage, player, EquipmentSlot.MAINHAND);
                 }
             }
-        });
-
-        UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (world.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
-                return InteractionResultHolder.pass(player.getItemInHand(hand));
-            }
-            ItemStack stack = player.getItemInHand(hand);
-            if (!stack.is(Items.ENDER_PEARL) && !stack.is(Items.CHORUS_FRUIT)) {
-                return InteractionResultHolder.pass(stack);
-            }
-            if (isPlayerInAnyStasis(serverPlayer)) {
-                player.displayClientMessage(
-                        Component.literal("Вы не можете здесь активировать данный предмет!")
-                                .withStyle(Style.EMPTY.withColor(0xFFFFFF)), false);
-                return InteractionResultHolder.fail(stack);
-            }
-            return InteractionResultHolder.pass(stack);
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -912,26 +926,6 @@ public class InfinityBackpackMod implements ModInitializer {
                     }
                 }
             }
-        });
-
-// === БЛОКИРОВКА ЭНДЕР-ЖЕМЧУГА И ХОРУСА В СТАНЕ ===
-        UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (world.isClientSide || !(player instanceof ServerPlayer serverPlayer)) {
-                return InteractionResultHolder.pass(player.getItemInHand(hand));
-            }
-
-            ItemStack stack = player.getItemInHand(hand);
-            if (!stack.is(Items.ENDER_PEARL) && !stack.is(Items.CHORUS_FRUIT)) {
-                return InteractionResultHolder.pass(stack);
-            }
-
-            if (isPlayerInAnyStasis(serverPlayer)) {
-                player.displayClientMessage(
-                        Component.literal("Вы не можете здесь активировать данный предмет!")
-                                .withStyle(Style.EMPTY.withColor(0xFFFFFF)), true);
-                return InteractionResultHolder.fail(stack);
-            }
-            return InteractionResultHolder.pass(stack);
         });
     }
 
@@ -1182,5 +1176,16 @@ public class InfinityBackpackMod implements ModInitializer {
         public boolean isInside(double x, double y, double z) {
             return Math.abs(x - center.getX()) <= 15 && Math.abs(y - center.getY()) <= 15 && Math.abs(z - center.getZ()) <= 15;
         }
+    }
+
+    private static Holder<Potion> registerPotion(String name, Potion potion) {
+        return Registry.registerForHolder(BuiltInRegistries.POTION,
+                ResourceLocation.fromNamespaceAndPath(MOD_ID, name), potion);
+    }
+
+    private static Item registerPotionItem(String name, String displayName, int[] gradient, Holder<Potion> potion, int color) {
+        return Registry.register(BuiltInRegistries.ITEM,
+                ResourceLocation.fromNamespaceAndPath(MOD_ID, name),
+                new CustomPotionItem(new Item.Properties(), displayName, gradient, potion, color));
     }
 }

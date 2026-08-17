@@ -10,7 +10,8 @@
     "ItemStackMixin",
     "ItemEntityMixin",
     "EnderpearlItemMixin",
-    "ChorusFruitItemMixin"
+    "ChorusFruitItemMixin",
+    "ItemCombinerMenuMixin"
   ],
   "client": [
     "ElytraLayerMixin"

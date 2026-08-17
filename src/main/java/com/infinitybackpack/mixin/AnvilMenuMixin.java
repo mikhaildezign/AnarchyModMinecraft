@@ -4,13 +4,24 @@ import com.infinitybackpack.InfinityBackpackMod;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.DataSlot;
+import net.minecraft.world.inventory.ItemCombinerMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.entity.player.Player;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,6 +29,94 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AnvilMenu.class)
 public class AnvilMenuMixin {
 
+    @Shadow @Final private DataSlot cost;
+    @Shadow private int repairItemCountCost;
+    @Shadow protected SimpleContainer inputSlots;
+    @Shadow protected ContainerLevelAccess access;
+
+    // === РЕЦЕПТЫ УЛУЧШЕННЫХ ЗЕЛИЙ ===
+    @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
+    private void onCreateResult(CallbackInfo ci) {
+        AnvilMenu menu = (AnvilMenu)(Object)this;
+        ItemStack left = menu.getSlot(0).getItem();
+        ItemStack right = menu.getSlot(1).getItem();
+
+        if (isVanillaStrengthII(left) && isVanillaStrengthII(right)) {
+            int count = Math.min(left.getCount(), right.getCount());
+            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN, count));
+            this.cost.set(10);
+            this.repairItemCountCost = count;
+            ci.cancel();
+            return;
+        }
+
+        if (left.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN) && right.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN)) {
+            int count = Math.min(left.getCount(), right.getCount());
+            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_STRENGTH_6MIN, count));
+            this.cost.set(30);
+            this.repairItemCountCost = count;
+            ci.cancel();
+            return;
+        }
+
+        if (isVanillaSwiftnessII(left) && isVanillaSwiftnessII(right)) {
+            int count = Math.min(left.getCount(), right.getCount());
+            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN, count));
+            this.cost.set(10);
+            this.repairItemCountCost = count;
+            ci.cancel();
+            return;
+        }
+
+        if (left.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN) && right.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN)) {
+            int count = Math.min(left.getCount(), right.getCount());
+            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_SWIFTNESS_6MIN, count));
+            this.cost.set(30);
+            this.repairItemCountCost = count;
+            ci.cancel();
+            return;
+        }
+    }
+
+    // === ПРАВИЛЬНОЕ УМЕНЬШЕНИЕ СЛОТОВ ПРИ ЗАБИРАНИИ РЕЗУЛЬТАТА ===
+    @Inject(method = "onTake", at = @At("HEAD"), cancellable = true)
+    private void onTake(Player player, ItemStack stack, CallbackInfo ci) {
+        AnvilMenu menu = (AnvilMenu)(Object)this;
+        ItemStack result = menu.getSlot(2).getItem();
+        if (result.isEmpty() || !isEnhancedPotion(result)) return;
+
+        int count = result.getCount();
+
+        // Левый слот
+        ItemStack left = this.inputSlots.getItem(0);
+        if (!left.isEmpty()) {
+            left.shrink(count);
+            this.inputSlots.setItem(0, left.isEmpty() ? ItemStack.EMPTY : left);
+        } else {
+            this.inputSlots.setItem(0, ItemStack.EMPTY);
+        }
+
+        // Правый слот
+        ItemStack right = this.inputSlots.getItem(1);
+        if (!right.isEmpty()) {
+            right.shrink(count);
+            this.inputSlots.setItem(1, right.isEmpty() ? ItemStack.EMPTY : right);
+        } else {
+            this.inputSlots.setItem(1, ItemStack.EMPTY);
+        }
+
+        // Опыт
+        if (!player.getAbilities().instabuild) {
+            player.giveExperienceLevels(-this.cost.get());
+        }
+
+        // Звук наковальни
+        this.access.execute((world, pos) -> world.levelEvent(1030, pos, 0));
+
+        ci.cancel();
+    }
+
+    // === СТАРАЯ ЛОГИКА ЗАЧАРОВАНИЙ ===
     @Inject(method = "createResult", at = @At("RETURN"))
     private void preventLevelUp(CallbackInfo ci) {
         AnvilMenu menu = (AnvilMenu)(Object)this;
@@ -27,26 +126,46 @@ public class AnvilMenuMixin {
         ItemStack left = menu.getSlot(0).getItem();
         ItemStack right = menu.getSlot(1).getItem();
 
-        // Бур: если результат Бур 2, но ни один входной не был Буром 2 → понижаем до Бур 1
         if (hasEnchantmentLevel(result, InfinityBackpackMod.DRILL, 2)) {
             if (!hasEnchantmentLevel(left, InfinityBackpackMod.DRILL, 2) && !hasEnchantmentLevel(right, InfinityBackpackMod.DRILL, 2)) {
                 setEnchantmentLevel(result, InfinityBackpackMod.DRILL, 1);
             }
         }
 
-        // Непробиваемый: если результат Непробиваемый 2, но ни один входной не был Непробиваемым 2 → понижаем до 1
         if (hasEnchantmentLevel(result, InfinityBackpackMod.IMPENETRABLE, 2)) {
             if (!hasEnchantmentLevel(left, InfinityBackpackMod.IMPENETRABLE, 2) && !hasEnchantmentLevel(right, InfinityBackpackMod.IMPENETRABLE, 2)) {
                 setEnchantmentLevel(result, InfinityBackpackMod.IMPENETRABLE, 1);
             }
         }
 
-        // Автоплавка + Шёлковое касание: удаляем конфликтующее зачарование из результата
         if (hasEnchantment(result, InfinityBackpackMod.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
             removeEnchantment(result, Enchantments.SILK_TOUCH);
         }
     }
 
+    // === ХЕЛПЕРЫ ДЛЯ ЗЕЛИЙ ===
+    private boolean isVanillaStrengthII(ItemStack stack) {
+        if (!stack.is(Items.POTION)) return false;
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) return false;
+        return contents.potion().isPresent() && contents.potion().get().is(Potions.STRONG_STRENGTH);
+    }
+
+    private boolean isVanillaSwiftnessII(ItemStack stack) {
+        if (!stack.is(Items.POTION)) return false;
+        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+        if (contents == null) return false;
+        return contents.potion().isPresent() && contents.potion().get().is(Potions.STRONG_SWIFTNESS);
+    }
+
+    private boolean isEnhancedPotion(ItemStack stack) {
+        return stack.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN) ||
+                stack.is(InfinityBackpackMod.ENHANCED_STRENGTH_6MIN) ||
+                stack.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN) ||
+                stack.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_6MIN);
+    }
+
+    // === ХЕЛПЕРЫ ДЛЯ ЗАЧАРОВАНИЙ ===
     private static boolean hasEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
         return getEnchantmentLevel(stack, key) == level;
     }
