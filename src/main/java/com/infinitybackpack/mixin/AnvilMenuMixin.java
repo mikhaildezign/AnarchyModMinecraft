@@ -1,16 +1,19 @@
 package com.infinitybackpack.mixin;
 
+import com.infinitybackpack.registry.ModItems;
+import com.infinitybackpack.registry.ModEnchantments;
 import com.infinitybackpack.InfinityBackpackMod;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AnvilMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ItemCombinerMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
@@ -27,12 +30,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(AnvilMenu.class)
-public class AnvilMenuMixin {
+public abstract class AnvilMenuMixin extends ItemCombinerMenu {
 
     @Shadow @Final private DataSlot cost;
     @Shadow private int repairItemCountCost;
-    @Shadow protected SimpleContainer inputSlots;
-    @Shadow protected ContainerLevelAccess access;
+
+    private AnvilMenuMixin(MenuType<?> type, int id, Inventory inventory, ContainerLevelAccess access) {
+        super(type, id, inventory, access);
+    }
 
     // === РЕЦЕПТЫ УЛУЧШЕННЫХ ЗЕЛИЙ ===
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
@@ -43,16 +48,16 @@ public class AnvilMenuMixin {
 
         if (isVanillaStrengthII(left) && isVanillaStrengthII(right)) {
             int count = Math.min(left.getCount(), right.getCount());
-            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN, count));
+            menu.getSlot(2).set(new ItemStack(ModItems.ENHANCED_STRENGTH_3MIN, count));
             this.cost.set(10);
             this.repairItemCountCost = count;
             ci.cancel();
             return;
         }
 
-        if (left.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN) && right.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN)) {
+        if (left.is(ModItems.ENHANCED_STRENGTH_3MIN) && right.is(ModItems.ENHANCED_STRENGTH_3MIN)) {
             int count = Math.min(left.getCount(), right.getCount());
-            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_STRENGTH_6MIN, count));
+            menu.getSlot(2).set(new ItemStack(ModItems.ENHANCED_STRENGTH_6MIN, count));
             this.cost.set(30);
             this.repairItemCountCost = count;
             ci.cancel();
@@ -61,16 +66,16 @@ public class AnvilMenuMixin {
 
         if (isVanillaSwiftnessII(left) && isVanillaSwiftnessII(right)) {
             int count = Math.min(left.getCount(), right.getCount());
-            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN, count));
+            menu.getSlot(2).set(new ItemStack(ModItems.ENHANCED_SWIFTNESS_3MIN, count));
             this.cost.set(10);
             this.repairItemCountCost = count;
             ci.cancel();
             return;
         }
 
-        if (left.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN) && right.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN)) {
+        if (left.is(ModItems.ENHANCED_SWIFTNESS_3MIN) && right.is(ModItems.ENHANCED_SWIFTNESS_3MIN)) {
             int count = Math.min(left.getCount(), right.getCount());
-            menu.getSlot(2).set(new ItemStack(InfinityBackpackMod.ENHANCED_SWIFTNESS_6MIN, count));
+            menu.getSlot(2).set(new ItemStack(ModItems.ENHANCED_SWIFTNESS_6MIN, count));
             this.cost.set(30);
             this.repairItemCountCost = count;
             ci.cancel();
@@ -126,19 +131,19 @@ public class AnvilMenuMixin {
         ItemStack left = menu.getSlot(0).getItem();
         ItemStack right = menu.getSlot(1).getItem();
 
-        if (hasEnchantmentLevel(result, InfinityBackpackMod.DRILL, 2)) {
-            if (!hasEnchantmentLevel(left, InfinityBackpackMod.DRILL, 2) && !hasEnchantmentLevel(right, InfinityBackpackMod.DRILL, 2)) {
-                setEnchantmentLevel(result, InfinityBackpackMod.DRILL, 1);
+        if (hasEnchantmentLevel(result, ModEnchantments.DRILL, 2)) {
+            if (!hasEnchantmentLevel(left, ModEnchantments.DRILL, 2) && !hasEnchantmentLevel(right, ModEnchantments.DRILL, 2)) {
+                setEnchantmentLevel(result, ModEnchantments.DRILL, 1);
             }
         }
 
-        if (hasEnchantmentLevel(result, InfinityBackpackMod.IMPENETRABLE, 2)) {
-            if (!hasEnchantmentLevel(left, InfinityBackpackMod.IMPENETRABLE, 2) && !hasEnchantmentLevel(right, InfinityBackpackMod.IMPENETRABLE, 2)) {
-                setEnchantmentLevel(result, InfinityBackpackMod.IMPENETRABLE, 1);
+        if (hasEnchantmentLevel(result, ModEnchantments.IMPENETRABLE, 2)) {
+            if (!hasEnchantmentLevel(left, ModEnchantments.IMPENETRABLE, 2) && !hasEnchantmentLevel(right, ModEnchantments.IMPENETRABLE, 2)) {
+                setEnchantmentLevel(result, ModEnchantments.IMPENETRABLE, 1);
             }
         }
 
-        if (hasEnchantment(result, InfinityBackpackMod.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
+        if (hasEnchantment(result, ModEnchantments.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
             removeEnchantment(result, Enchantments.SILK_TOUCH);
         }
     }
@@ -159,18 +164,18 @@ public class AnvilMenuMixin {
     }
 
     private boolean isEnhancedPotion(ItemStack stack) {
-        return stack.is(InfinityBackpackMod.ENHANCED_STRENGTH_3MIN) ||
-                stack.is(InfinityBackpackMod.ENHANCED_STRENGTH_6MIN) ||
-                stack.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_3MIN) ||
-                stack.is(InfinityBackpackMod.ENHANCED_SWIFTNESS_6MIN);
+        return stack.is(ModItems.ENHANCED_STRENGTH_3MIN) ||
+                stack.is(ModItems.ENHANCED_STRENGTH_6MIN) ||
+                stack.is(ModItems.ENHANCED_SWIFTNESS_3MIN) ||
+                stack.is(ModItems.ENHANCED_SWIFTNESS_6MIN);
     }
 
     // === ХЕЛПЕРЫ ДЛЯ ЗАЧАРОВАНИЙ ===
-    private static boolean hasEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
+    private static boolean hasEnchantmentLevel(ItemStack stack, ResourceKey key, int level) {
         return getEnchantmentLevel(stack, key) == level;
     }
 
-    private static int getEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key) {
+    private static int getEnchantmentLevel(ItemStack stack, ResourceKey key) {
         ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
             if (entry.getKey().is(key)) {
@@ -186,11 +191,11 @@ public class AnvilMenuMixin {
         return 0;
     }
 
-    private static boolean hasEnchantment(ItemStack stack, ResourceKey<Enchantment> key) {
+    private static boolean hasEnchantment(ItemStack stack, ResourceKey key) {
         return getEnchantmentLevel(stack, key) > 0;
     }
 
-    private static void removeEnchantment(ItemStack stack, ResourceKey<Enchantment> key) {
+    private static void removeEnchantment(ItemStack stack, ResourceKey key) {
         ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
             if (entry.getKey().is(key)) {
@@ -211,7 +216,7 @@ public class AnvilMenuMixin {
         }
     }
 
-    private static void setEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
+    private static void setEnchantmentLevel(ItemStack stack, ResourceKey key, int level) {
         ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
             if (entry.getKey().is(key)) {

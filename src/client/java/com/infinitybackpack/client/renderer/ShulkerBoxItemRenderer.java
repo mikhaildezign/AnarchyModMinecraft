@@ -1,5 +1,6 @@
 package com.infinitybackpack.client.renderer;
 
+import com.infinitybackpack.registry.ModConstants;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -17,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class ShulkerBoxItemRenderer implements BuiltinItemRendererRegistry.DynamicItemRenderer {
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
-            InfinityBackpackMod.MOD_ID, "textures/item/shulker_lime.png"
+            ModConstants.MOD_ID, "textures/item/shulker_lime.png"
     );
 
     private ModelPart shulkerRoot;

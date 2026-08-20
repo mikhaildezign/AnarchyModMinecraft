@@ -1,42 +1,26 @@
 package com.infinitybackpack.item;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PotionItem;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionContents;
-import net.minecraft.world.level.Level;
-
-import java.util.List;
-import java.util.Optional;
 
 public class CustomPotionItem extends PotionItem {
     private final String displayName;
     private final int[] gradient;
-    private final Holder<Potion> potion;
+    private final Holder potion;
     private final int color;
 
-    public CustomPotionItem(Properties properties, String displayName, int[] gradient, Holder<Potion> potion, int color) {
+    public CustomPotionItem(Properties properties, String displayName, int[] gradient, Holder potion, int color) {
         super(properties);
         this.displayName = displayName;
         this.gradient = gradient;
         this.potion = potion;
         this.color = color;
-    }
-
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        if (level.isClientSide) return;
-        if (!stack.has(DataComponents.POTION_CONTENTS)) {
-            stack.set(DataComponents.POTION_CONTENTS, new PotionContents(Optional.of(this.potion), Optional.of(this.color), List.of()));
-        }
     }
 
     @Override

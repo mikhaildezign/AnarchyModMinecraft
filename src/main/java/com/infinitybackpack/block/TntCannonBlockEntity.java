@@ -1,5 +1,6 @@
 package com.infinitybackpack.block;
 
+import com.infinitybackpack.registry.ModBlockEntities;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.dynamite.CustomPrimedTnt;
 import com.infinitybackpack.dynamite.CustomTntBlock;
@@ -31,7 +32,7 @@ public class TntCannonBlockEntity extends BlockEntity implements Container, Menu
     public static final int COOLDOWN_TICKS = 60;
 
     public TntCannonBlockEntity(BlockPos pos, BlockState state) {
-        super(InfinityBackpackMod.TNT_CANNON_BLOCK_ENTITY, pos, state);
+        super(ModBlockEntities.TNT_CANNON_BLOCK_ENTITY, pos, state);
     }
 
     public void tick() {

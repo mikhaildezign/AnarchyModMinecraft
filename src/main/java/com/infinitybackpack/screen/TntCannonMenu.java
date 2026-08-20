@@ -1,5 +1,6 @@
 package com.infinitybackpack.screen;
 
+import com.infinitybackpack.registry.ModMenus;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.block.TntCannonBlockEntity;
 import net.minecraft.core.component.DataComponents;
@@ -26,7 +27,7 @@ public class TntCannonMenu extends AbstractContainerMenu {
     }
 
     public TntCannonMenu(int containerId, Inventory playerInventory, Container cannonInventory) {
-        super(InfinityBackpackMod.TNT_CANNON_MENU, containerId);
+        super(ModMenus.TNT_CANNON_MENU, containerId);
         this.cannonInventory = cannonInventory;
         cannonInventory.startOpen(playerInventory.player);
 

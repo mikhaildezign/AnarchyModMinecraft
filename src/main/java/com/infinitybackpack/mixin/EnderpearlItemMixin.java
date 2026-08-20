@@ -1,5 +1,6 @@
 package com.infinitybackpack.mixin;
 
+import com.infinitybackpack.event.ModEvents;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -29,7 +30,7 @@ public class EnderpearlItemMixin {
     private boolean cancelSpawn(Level level, Entity entity, Operation<Boolean> original) {
         if (entity instanceof ThrownEnderpearl pearl
                 && pearl.getOwner() instanceof ServerPlayer player
-                && InfinityBackpackMod.isPlayerInAnyStasis(player)) {
+                && ModEvents.isPlayerInAnyStasis(player)) {
             return false;
         }
         return original.call(level, entity);
@@ -44,7 +45,7 @@ public class EnderpearlItemMixin {
             )
     )
     private void cancelConsume(ItemStack stack, int amount, LivingEntity entity, Operation<Void> original) {
-        if (entity instanceof ServerPlayer player && InfinityBackpackMod.isPlayerInAnyStasis(player)) {
+        if (entity instanceof ServerPlayer player && ModEvents.isPlayerInAnyStasis(player)) {
             player.displayClientMessage(
                     Component.literal("Вы не можете здесь активировать данный предмет!")
                             .withStyle(Style.EMPTY.withColor(0xFFFFFF)), false);

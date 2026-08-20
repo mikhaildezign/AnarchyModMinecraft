@@ -1,5 +1,8 @@
 package com.infinitybackpack.client;
 
+import com.infinitybackpack.registry.ModItems;
+import com.infinitybackpack.registry.ModMenus;
+import com.infinitybackpack.registry.ModEntities;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.client.renderer.CustomPrimedTntRenderer;
 import com.infinitybackpack.client.renderer.ShulkerBoxItemRenderer;
@@ -25,15 +28,15 @@ import net.minecraft.world.item.ItemStack;
 public class InfinityBackpackClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        MenuScreens.register(InfinityBackpackMod.BACKPACK_MENU, BackpackScreen::new);
-        MenuScreens.register(InfinityBackpackMod.TNT_CANNON_MENU, TntCannonScreen::new);
-        MenuScreens.register(InfinityBackpackMod.EXP_EXCHANGE_MENU, ExpExchangeScreen::new);
+        MenuScreens.register(ModMenus.BACKPACK_MENU, BackpackScreen::new);
+        MenuScreens.register(ModMenus.TNT_CANNON_MENU, TntCannonScreen::new);
+        MenuScreens.register(ModMenus.EXP_EXCHANGE_MENU, ExpExchangeScreen::new);
 
-        EntityRendererRegistry.register(InfinityBackpackMod.CUSTOM_PRIMED_TNT, CustomPrimedTntRenderer::new);
-        EntityRendererRegistry.register(InfinityBackpackMod.SNOWBALL_CLUMP_PROJECTILE, context -> new ThrownItemRenderer<>(context, 1.5f, true));
+        EntityRendererRegistry.register(ModEntities.CUSTOM_PRIMED_TNT, CustomPrimedTntRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SNOWBALL_CLUMP_PROJECTILE, context -> new ThrownItemRenderer<>(context, 1.5f, true));
 
         BuiltinItemRendererRegistry.INSTANCE.register(
-                InfinityBackpackMod.INFINITY_BACKPACK,
+                ModItems.INFINITY_BACKPACK,
                 new ShulkerBoxItemRenderer()
         );
 
@@ -55,7 +58,7 @@ public class InfinityBackpackClient implements ClientModInitializer {
                 return InteractionResultHolder.pass(stack);
             }
 
-            int autoSmeltLevel = InfinityBackpackMod.getAutoSmeltLevel(stack);
+            int autoSmeltLevel = ModItems.getAutoSmeltLevel(stack);
             if (autoSmeltLevel <= 0) {
                 return InteractionResultHolder.pass(stack);
             }
@@ -65,7 +68,7 @@ public class InfinityBackpackClient implements ClientModInitializer {
         });
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
-            if (stack.is(InfinityBackpackMod.SUN_HELMET)) {
+            if (stack.is(ModItems.SUN_HELMET)) {
                 lines.removeIf(line -> {
                     String s = line.getString();
                     if (s.contains("Когда надето") || s.contains("Когда надевается")
@@ -95,7 +98,7 @@ public class InfinityBackpackClient implements ClientModInitializer {
                         .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
             }
 
-            if (stack.is(InfinityBackpackMod.SUN_BOOTS)) {
+            if (stack.is(ModItems.SUN_BOOTS)) {
                 lines.removeIf(line -> {
                     String s = line.getString();
                     if (s.contains("Когда обуто") || s.contains("Когда надето")

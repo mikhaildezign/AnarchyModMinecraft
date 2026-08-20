@@ -1,5 +1,6 @@
 package com.infinitybackpack.item;
 
+import com.infinitybackpack.registry.ModEntities;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -19,7 +20,7 @@ public class SnowballClumpProjectile extends ThrowableItemProjectile {
     }
 
     public SnowballClumpProjectile(Level level, LivingEntity shooter) {
-        super(InfinityBackpackMod.SNOWBALL_CLUMP_PROJECTILE, shooter, level);
+        super(ModEntities.SNOWBALL_CLUMP_PROJECTILE, shooter, level);
     }
 
     @Override

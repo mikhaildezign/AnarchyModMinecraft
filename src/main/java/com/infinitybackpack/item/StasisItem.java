@@ -1,5 +1,6 @@
 package com.infinitybackpack.item;
 
+import com.infinitybackpack.event.ModEvents;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -80,7 +81,7 @@ public class StasisItem extends Item {
 
         BlockPos center = player.blockPosition();
         long endTick = level.getGameTime() + 300;
-        InfinityBackpackMod.addStasisZone(serverLevel, center, endTick, player.getUUID());
+        ModEvents.addStasisZone(serverLevel, center, endTick, player.getUUID());
 
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 2.0f, 1.0f);

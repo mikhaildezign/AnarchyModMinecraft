@@ -1,6 +1,7 @@
 package com.infinitybackpack.mixin;
 
-import com.infinitybackpack.InfinityBackpackMod;
+import com.infinitybackpack.registry.ModEnchantments;
+import com.infinitybackpack.registry.ModUtils;
 import com.infinitybackpack.item.CustomElytraItem;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.ChatFormatting;
@@ -34,7 +35,7 @@ public class EnchantmentMixin {
     @Inject(method = "canEnchant", at = @At("RETURN"), cancellable = true)
     private void restrictMagnetism(ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         Enchantment self = (Enchantment)(Object)this;
-        if (!InfinityBackpackMod.isMagnetism(self)) {
+        if (!ModUtils.isMagnetism(self)) {
             return;
         }
         boolean isTool = stack.getItem() instanceof PickaxeItem
@@ -48,7 +49,7 @@ public class EnchantmentMixin {
     @ModifyReturnValue(method = "getMaxLevel", at = @At("RETURN"))
     private int modifyMaxLevel(int original) {
         Enchantment self = (Enchantment)(Object)this;
-        String id = InfinityBackpackMod.getEnchantmentId(self);
+        String id = ModUtils.getEnchantmentId(self);
         System.out.println("[DEBUG] modifyMaxLevel called for '" + id + "', original = " + original);
 
         if (id == null || id.isEmpty()) {
@@ -77,13 +78,13 @@ public class EnchantmentMixin {
 
     @Inject(method = "getFullname(Lnet/minecraft/core/Holder;I)Lnet/minecraft/network/chat/Component;", at = @At("RETURN"), cancellable = true)
     private static void onGetFullname(Holder<Enchantment> enchantment, int level, CallbackInfoReturnable<Component> cir) {
-        if (enchantment.is(InfinityBackpackMod.IMPENETRABLE)) {
+        if (enchantment.is(ModEnchantments.IMPENETRABLE)) {
             MutableComponent component = Component.translatable("enchantment.infinitybackpack.impenetrable")
                     .withStyle(ChatFormatting.GRAY);
             component.append(CommonComponents.SPACE)
                     .append(Component.translatable("enchantment.level." + level).withStyle(ChatFormatting.GRAY));
             cir.setReturnValue(component);
-        } else if (enchantment.is(InfinityBackpackMod.UNBREAKABLE_ENCHANT)) {
+        } else if (enchantment.is(ModEnchantments.UNBREAKABLE_ENCHANT)) {
             cir.setReturnValue(Component.translatable("enchantment.infinitybackpack.unbreakable")
                     .withStyle(ChatFormatting.GRAY));
         }

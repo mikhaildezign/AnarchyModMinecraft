@@ -1,5 +1,7 @@
 package com.infinitybackpack.screen;
 
+import com.infinitybackpack.registry.ModItems;
+import com.infinitybackpack.registry.ModMenus;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -15,7 +17,7 @@ import net.minecraft.world.item.Items;
 
 public class ExpExchangeMenu extends AbstractContainerMenu {
     public ExpExchangeMenu(int syncId, Inventory playerInventory) {
-        super(InfinityBackpackMod.EXP_EXCHANGE_MENU, syncId);
+        super(ModMenus.EXP_EXCHANGE_MENU, syncId);
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
@@ -39,10 +41,10 @@ public class ExpExchangeMenu extends AbstractContainerMenu {
 
         switch (buttonId) {
             case 0 -> { cost = 7; result = new ItemStack(Items.EXPERIENCE_BOTTLE); }
-            case 1 -> { cost = 315; result = new ItemStack(InfinityBackpackMod.EXP_BOTTLE_15); }
-            case 2 -> { cost = 1395; result = new ItemStack(InfinityBackpackMod.EXP_BOTTLE_30); }
-            case 3 -> { cost = 5345; result = new ItemStack(InfinityBackpackMod.EXP_BOTTLE_50); }
-            case 4 -> { cost = 30971; result = new ItemStack(InfinityBackpackMod.EXP_BOTTLE_100); }
+            case 1 -> { cost = 315; result = new ItemStack(ModItems.EXP_BOTTLE_15); }
+            case 2 -> { cost = 1395; result = new ItemStack(ModItems.EXP_BOTTLE_30); }
+            case 3 -> { cost = 5345; result = new ItemStack(ModItems.EXP_BOTTLE_50); }
+            case 4 -> { cost = 30971; result = new ItemStack(ModItems.EXP_BOTTLE_100); }
             default -> { return false; }
         }
 

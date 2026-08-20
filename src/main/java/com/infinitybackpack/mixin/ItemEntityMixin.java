@@ -1,8 +1,9 @@
 package com.infinitybackpack.mixin;
 
-import com.infinitybackpack.InfinityBackpackMod;
+import com.infinitybackpack.registry.ModConstants;
+import com.infinitybackpack.registry.ModItems;
+import com.infinitybackpack.registry.ModUtils;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -51,7 +52,7 @@ public class ItemEntityMixin {
             ItemStack tool = player.getMainHandItem();
             System.out.println("[AUTOSMELT DEBUG] Tool in main hand: " + tool.getItem());
 
-            int autoSmeltLevel = InfinityBackpackMod.getAutoSmeltLevel(tool);
+            int autoSmeltLevel = ModItems.getAutoSmeltLevel(tool);
             System.out.println("[AUTOSMELT DEBUG] AutoSmelt level = " + autoSmeltLevel);
 
             if (autoSmeltLevel <= 0) continue;
@@ -62,8 +63,8 @@ public class ItemEntityMixin {
                 continue;
             }
 
-            boolean isPickaxe = tool.is(InfinityBackpackMod.PICKAXES_TAG);
-            boolean isShovel = tool.is(InfinityBackpackMod.SHOVELS_TAG);
+            boolean isPickaxe = tool.is(ModConstants.PICKAXES_TAG);
+            boolean isShovel = tool.is(ModConstants.SHOVELS_TAG);
             System.out.println("[AUTOSMELT DEBUG] isPickaxe = " + isPickaxe + ", isShovel = " + isShovel);
 
             if (!isPickaxe && !isShovel) continue;
@@ -80,7 +81,7 @@ public class ItemEntityMixin {
                     smelted.setCount(stack.getCount());
 
                     // Кирка — только руды; Лопата — только стекло (песок)
-                    if (isPickaxe && !InfinityBackpackMod.isOreSmeltingResult(smelted)) {
+                    if (isPickaxe && !ModUtils.isOreSmeltingResult(smelted)) {
                         System.out.println("[AUTOSMELT DEBUG] Pickaxe: result is not an ore, skipping");
                         continue;
                     }

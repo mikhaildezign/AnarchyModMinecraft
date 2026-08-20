@@ -1,5 +1,7 @@
 package com.infinitybackpack.mixin;
 
+import com.infinitybackpack.event.ModEvents;
+import com.infinitybackpack.registry.ModEnchantments;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -19,7 +21,7 @@ public class ChorusFruitItemMixin {
     @Inject(method = "finishUsingItem", at = @At("HEAD"), cancellable = true)
     private void onFinishUsing(ItemStack stack, Level level, LivingEntity livingEntity, CallbackInfoReturnable<ItemStack> cir) {
         if (level.isClientSide || !(livingEntity instanceof ServerPlayer player)) return;
-        if (InfinityBackpackMod.isPlayerInAnyStasis(player)) {
+        if (ModEvents.isPlayerInAnyStasis(player)) {
             player.displayClientMessage(
                     Component.literal("Вы не можете здесь активировать данный предмет!")
                             .withStyle(Style.EMPTY.withColor(0xFFFFFF)), false);

@@ -1,5 +1,6 @@
 package com.infinitybackpack.client.screen;
 
+import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.screen.ExpExchangeMenu;
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,10 +37,10 @@ public class ExpExchangeScreen extends AbstractContainerScreen<ExpExchangeMenu> 
         int rowY = y + 18 + 18;
 
         buttons.add(new ExchangeButton(0, x + 8,  rowY, new ItemStack(Items.EXPERIENCE_BOTTLE),        7));
-        buttons.add(new ExchangeButton(1, x + 44, rowY, new ItemStack(InfinityBackpackMod.EXP_BOTTLE_15), 315));
-        buttons.add(new ExchangeButton(2, x + 80, rowY, new ItemStack(InfinityBackpackMod.EXP_BOTTLE_30), 1395));
-        buttons.add(new ExchangeButton(3, x + 116,rowY, new ItemStack(InfinityBackpackMod.EXP_BOTTLE_50), 5345));
-        buttons.add(new ExchangeButton(4, x + 152,rowY, new ItemStack(InfinityBackpackMod.EXP_BOTTLE_100),30971));
+        buttons.add(new ExchangeButton(1, x + 44, rowY, new ItemStack(ModItems.EXP_BOTTLE_15), 315));
+        buttons.add(new ExchangeButton(2, x + 80, rowY, new ItemStack(ModItems.EXP_BOTTLE_30), 1395));
+        buttons.add(new ExchangeButton(3, x + 116,rowY, new ItemStack(ModItems.EXP_BOTTLE_50), 5345));
+        buttons.add(new ExchangeButton(4, x + 152,rowY, new ItemStack(ModItems.EXP_BOTTLE_100),30971));
 
         infoBottleRect = new Rect(x + 80, y + 18 + 36, 16, 16);
     }

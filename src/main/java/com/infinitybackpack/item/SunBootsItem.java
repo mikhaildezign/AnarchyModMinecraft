@@ -1,5 +1,6 @@
 package com.infinitybackpack.item;
 
+import com.infinitybackpack.registry.ModEnchantments;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -83,7 +84,7 @@ public class SunBootsItem extends ArmorItem {
                 addEnchant(registry, enchantments, Enchantments.DEPTH_STRIDER, 4);
                 addEnchant(registry, enchantments, Enchantments.FIRE_PROTECTION, 5);
                 addEnchant(registry, enchantments, Enchantments.SOUL_SPEED, 4);
-                addEnchant(registry, enchantments, InfinityBackpackMod.IMPENETRABLE, 2);
+                addEnchant(registry, enchantments, ModEnchantments.IMPENETRABLE, 2);
 
                 stack.set(DataComponents.ENCHANTMENTS, enchantments.toImmutable());
             });

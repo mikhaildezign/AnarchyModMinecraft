@@ -1,5 +1,7 @@
 package com.infinitybackpack.dynamite;
 
+import com.infinitybackpack.registry.ModBlocks;
+import com.infinitybackpack.registry.ModEntities;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -44,7 +46,7 @@ public class CustomPrimedTnt extends PrimedTnt {
     }
 
     public CustomPrimedTnt(Level level, double x, double y, double z, @Nullable LivingEntity igniter) {
-        super(InfinityBackpackMod.CUSTOM_PRIMED_TNT, level);
+        super(ModEntities.CUSTOM_PRIMED_TNT, level);
         this.setPos(x, y, z);
         double d = level.random.nextDouble() * 6.2831854820251465;
         this.setDeltaMovement(-Math.sin(d) * 0.02, 0.2F, -Math.cos(d) * 0.02);
@@ -89,13 +91,13 @@ public class CustomPrimedTnt extends PrimedTnt {
     public BlockState getBlockState() {
         return switch (getDynamiteType()) {
             case VANILLA -> Blocks.TNT.defaultBlockState();
-            case DYNAMITE_A -> InfinityBackpackMod.DYNAMITE_A_BLOCK.defaultBlockState();
-            case DYNAMITE_B -> InfinityBackpackMod.DYNAMITE_B_BLOCK.defaultBlockState();
-            case DYNAMITE_B2 -> InfinityBackpackMod.DYNAMITE_B2_BLOCK.defaultBlockState();
-            case DYNAMITE_C4 -> InfinityBackpackMod.DYNAMITE_C4_BLOCK.defaultBlockState();
-            case SHOCKWAVE -> InfinityBackpackMod.SHOCKWAVE_BLOCK.defaultBlockState();
-            case STILLER -> InfinityBackpackMod.STILLER_BLOCK.defaultBlockState();
-            case RELIABLE_STILLER -> InfinityBackpackMod.RELIABLE_STILLER_BLOCK.defaultBlockState();
+            case DYNAMITE_A -> ModBlocks.DYNAMITE_A_BLOCK.defaultBlockState();
+            case DYNAMITE_B -> ModBlocks.DYNAMITE_B_BLOCK.defaultBlockState();
+            case DYNAMITE_B2 -> ModBlocks.DYNAMITE_B2_BLOCK.defaultBlockState();
+            case DYNAMITE_C4 -> ModBlocks.DYNAMITE_C4_BLOCK.defaultBlockState();
+            case SHOCKWAVE -> ModBlocks.SHOCKWAVE_BLOCK.defaultBlockState();
+            case STILLER -> ModBlocks.STILLER_BLOCK.defaultBlockState();
+            case RELIABLE_STILLER -> ModBlocks.RELIABLE_STILLER_BLOCK.defaultBlockState();
         };
     }
 

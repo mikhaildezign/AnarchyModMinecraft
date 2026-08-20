@@ -1,5 +1,6 @@
 package com.infinitybackpack.block;
 
+import com.infinitybackpack.registry.ModBlockEntities;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -39,7 +40,7 @@ public class TntCannonBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTicker(type, InfinityBackpackMod.TNT_CANNON_BLOCK_ENTITY, TntCannonBlockEntity::serverTick);
+        return level.isClientSide ? null : createTicker(type, ModBlockEntities.TNT_CANNON_BLOCK_ENTITY, TntCannonBlockEntity::serverTick);
     }
 
     @SuppressWarnings("unchecked")

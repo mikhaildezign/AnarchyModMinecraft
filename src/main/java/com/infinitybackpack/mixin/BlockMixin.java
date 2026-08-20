@@ -1,11 +1,13 @@
 package com.infinitybackpack.mixin;
 
-import com.infinitybackpack.InfinityBackpackMod;
+import com.infinitybackpack.registry.ModConstants;
+import com.infinitybackpack.registry.ModUtils;
+import com.infinitybackpack.registry.ModEnchantments;
+import com.infinitybackpack.registry.ModItems;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -45,7 +47,7 @@ public class BlockMixin {
         ServerPlayer player = (ServerPlayer) entity;
 
         boolean hasMagnetism = hasMagnetism(tool);
-        boolean hasFilter = InfinityBackpackMod.getFilterLevel(tool) > 0;
+        boolean hasFilter = ModItems.getFilterLevel(tool) > 0;
 
         if (!hasMagnetism && !hasFilter) {
             return;
@@ -74,7 +76,7 @@ public class BlockMixin {
         if (tool.isEmpty()) return false;
         ItemEnchantments enchantments = tool.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
         for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
-            if (entry.getKey().is(InfinityBackpackMod.MAGNETISM)) {
+            if (entry.getKey().is(ModEnchantments.MAGNETISM)) {
                 return true;
             }
         }
@@ -82,7 +84,7 @@ public class BlockMixin {
     }
 
     private static void applyAutoSmelt(ServerLevel serverLevel, ItemStack tool, List<ItemStack> drops) {
-        int autoSmeltLevel = InfinityBackpackMod.getAutoSmeltLevel(tool);
+        int autoSmeltLevel = ModItems.getAutoSmeltLevel(tool);
         if (autoSmeltLevel <= 0) return;
 
         CustomData customData = tool.get(DataComponents.CUSTOM_DATA);
@@ -90,8 +92,8 @@ public class BlockMixin {
             return;
         }
 
-        boolean isPickaxe = tool.is(InfinityBackpackMod.PICKAXES_TAG) || tool.getItem() instanceof net.minecraft.world.item.PickaxeItem;
-        boolean isShovel = tool.is(InfinityBackpackMod.SHOVELS_TAG) || tool.getItem() instanceof net.minecraft.world.item.ShovelItem;
+        boolean isPickaxe = tool.is(ModConstants.PICKAXES_TAG) || tool.getItem() instanceof net.minecraft.world.item.PickaxeItem;
+        boolean isShovel = tool.is(ModConstants.SHOVELS_TAG) || tool.getItem() instanceof net.minecraft.world.item.ShovelItem;
         if (!isPickaxe && !isShovel) return;
 
         for (int i = 0; i < drops.size(); i++) {
@@ -107,7 +109,7 @@ public class BlockMixin {
                 smelted.setCount(drop.getCount());
 
                 // Кирка — только руды; Лопата — только стекло (песок)
-                if (isPickaxe && !InfinityBackpackMod.isOreSmeltingResult(smelted)) continue;
+                if (isPickaxe && !ModUtils.isOreSmeltingResult(smelted)) continue;
                 if (isShovel && !smelted.is(Items.GLASS)) continue;
 
                 boolean shouldSmelt = false;
@@ -125,7 +127,7 @@ public class BlockMixin {
     }
 
     private static void applyFilter(ServerPlayer player, ItemStack tool, List<ItemStack> drops) {
-        if (InfinityBackpackMod.getFilterLevel(tool) <= 0) return;
-        drops.removeIf(drop -> InfinityBackpackMod.isItemFilteredForPlayer(player, drop));
+        if (ModItems.getFilterLevel(tool) <= 0) return;
+        drops.removeIf(drop -> ModItems.isItemFilteredForPlayer(player, drop));
     }
 }

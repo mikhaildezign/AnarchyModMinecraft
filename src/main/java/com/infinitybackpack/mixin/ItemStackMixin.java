@@ -1,5 +1,6 @@
 package com.infinitybackpack.mixin;
 
+import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.InfinityBackpackMod;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.server.level.ServerLevel;
@@ -43,7 +44,7 @@ public class ItemStackMixin {
         // Проверяем, что предмет именно в основной руке (как было в старом коде)
         if (player.getMainHandItem() != self) return;
 
-        int unbreakableLevel = InfinityBackpackMod.getUnbreakableLevel(self);
+        int unbreakableLevel = ModItems.getUnbreakableLevel(self);
         if (unbreakableLevel > 0) {
             int remaining = self.getMaxDamage() - self.getDamageValue();
             if (remaining <= 50) {

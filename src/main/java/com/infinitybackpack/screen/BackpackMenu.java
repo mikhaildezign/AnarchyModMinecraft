@@ -1,5 +1,7 @@
 package com.infinitybackpack.screen;
 
+import com.infinitybackpack.registry.ModItems;
+import com.infinitybackpack.registry.ModMenus;
 import com.infinitybackpack.InfinityBackpackMod;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
@@ -27,7 +29,7 @@ public class BackpackMenu extends AbstractContainerMenu {
     }
 
     public BackpackMenu(int syncId, Inventory playerInventory, ItemStack backpackStack) {
-        super(InfinityBackpackMod.BACKPACK_MENU, syncId);
+        super(ModMenus.BACKPACK_MENU, syncId);
         this.backpackStack = backpackStack;
 
         ItemContainerContents contents = backpackStack.getOrDefault(DataComponents.CONTAINER, ItemContainerContents.EMPTY);
@@ -60,12 +62,12 @@ public class BackpackMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         for (ItemStack stack : player.getInventory().items) {
-            if (stack.is(InfinityBackpackMod.INFINITY_BACKPACK)) {
+            if (stack.is(ModItems.INFINITY_BACKPACK)) {
                 return true;
             }
         }
         for (ItemStack stack : player.getInventory().offhand) {
-            if (stack.is(InfinityBackpackMod.INFINITY_BACKPACK)) {
+            if (stack.is(ModItems.INFINITY_BACKPACK)) {
                 return true;
             }
         }
@@ -125,7 +127,7 @@ public class BackpackMenu extends AbstractContainerMenu {
             if (stack.is(SHULKER_BOXES_TAG)) {
                 return false;
             }
-            if (stack.is(InfinityBackpackMod.INFINITY_BACKPACK)) {
+            if (stack.is(ModItems.INFINITY_BACKPACK)) {
                 return false;
             }
             return super.mayPlace(stack);
@@ -141,7 +143,7 @@ public class BackpackMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPickup(Player player) {
             ItemStack stack = this.getItem();
-            if (stack.is(InfinityBackpackMod.INFINITY_BACKPACK)) {
+            if (stack.is(ModItems.INFINITY_BACKPACK)) {
                 return false;
             }
             return super.mayPickup(player);
