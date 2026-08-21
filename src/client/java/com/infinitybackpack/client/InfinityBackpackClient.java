@@ -1,5 +1,8 @@
 package com.infinitybackpack.client;
 
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.registry.ModMenus;
 import com.infinitybackpack.registry.ModEntities;
@@ -128,5 +131,20 @@ public class InfinityBackpackClient implements ClientModInitializer {
                         .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
             }
         });
+
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+                    if (tintIndex == 0) {
+                        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+                        if (contents != null) {
+                            return contents.customColor().orElseGet(() -> PotionContents.getColor(contents.getAllEffects()));
+                        }
+                    }
+                    return 0xFFFFFF;
+                },
+                ModItems.ENHANCED_STRENGTH_3MIN,
+                ModItems.ENHANCED_STRENGTH_6MIN,
+                ModItems.ENHANCED_SWIFTNESS_3MIN,
+                ModItems.ENHANCED_SWIFTNESS_6MIN
+        );
     }
 }
