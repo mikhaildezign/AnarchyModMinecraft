@@ -1,10 +1,10 @@
 package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.event.ModEvents;
+import com.infinitybackpack.registry.ModConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ChorusFruitItem;
@@ -23,10 +23,12 @@ public class ChorusFruitItemMixin {
         if (!(livingEntity instanceof Player player)) return;
 
         boolean inStasis;
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            inStasis = ModEvents.isPlayerInAnyStasis(serverPlayer);
+        if (!level.isClientSide) {
+            inStasis = player instanceof ServerPlayer serverPlayer && ModEvents.isPlayerInAnyStasis(serverPlayer);
         } else {
-            inStasis = player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            long currentTick = level.getGameTime();
+            inStasis = ModConstants.CLIENT_STASIS_ZONES.stream()
+                    .anyMatch(z -> !z.isExpired(currentTick) && z.isInside(player.getX(), player.getY(), player.getZ()));
         }
 
         if (inStasis) {

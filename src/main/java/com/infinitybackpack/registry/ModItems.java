@@ -1,5 +1,6 @@
 package com.infinitybackpack.registry;
 
+import com.infinitybackpack.item.WinnerPotionItem;
 import net.minecraft.world.item.alchemy.Potion;
 import com.infinitybackpack.item.*;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -270,6 +271,17 @@ public class ModItems {
 
     public static final Item ENHANCED_SWIFTNESS_6MIN = registerPotionItem("enhanced_swiftness_6min", "Улучшенное зелье скорости",
             new int[]{0x00008B, 0x00BFFF, 0x00008B}, ModPotions.ENHANCED_SWIFTNESS_6MIN, 0x008BE8);
+
+    public static final Item WINNER_POTION = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "winner_potion"),
+            new WinnerPotionItem(new Item.Properties()
+                    .component(DataComponents.POTION_CONTENTS, new PotionContents(
+                            Optional.of(ModPotions.WINNER_POTION),
+                            Optional.empty(),
+                            List.of()
+                    )))
+    );
 
     // === TALISMAN ===
     private static final ItemAttributeModifiers TALISMAN_ATTRIBUTES = ItemAttributeModifiers.builder()

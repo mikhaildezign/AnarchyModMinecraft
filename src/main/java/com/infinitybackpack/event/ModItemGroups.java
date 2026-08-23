@@ -44,6 +44,7 @@ public class ModItemGroups {
             content.accept(ModItems.ENHANCED_STRENGTH_6MIN);
             content.accept(ModItems.ENHANCED_SWIFTNESS_3MIN);
             content.accept(ModItems.ENHANCED_SWIFTNESS_6MIN);
+            content.accept(ModItems.WINNER_POTION);
         });
     }
 }

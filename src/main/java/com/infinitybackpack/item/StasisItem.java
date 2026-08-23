@@ -87,7 +87,9 @@ public class StasisItem extends Item {
                 SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 2.0f, 1.0f);
 
         player.getCooldowns().addCooldown(this, 600);
-        stack.shrink(1);
+        if (!player.isCreative()) {
+            stack.shrink(1);
+        }
         return InteractionResultHolder.success(stack);
     }
 

@@ -16,6 +16,7 @@ public class ModNetworking {
 
     public static void init() {
         PayloadTypeRegistry.playC2S().register(ToggleAutoSmeltPayload.TYPE, ToggleAutoSmeltPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(StasisSyncPayload.TYPE, StasisSyncPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(ToggleAutoSmeltPayload.TYPE, (payload, context) -> {
             ItemStack stack = context.player().getMainHandItem();

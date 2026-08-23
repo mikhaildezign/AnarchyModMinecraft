@@ -1,12 +1,12 @@
 package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.event.ModEvents;
+import com.infinitybackpack.registry.ModConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.EnderpearlItem;
 import net.minecraft.world.item.ItemStack;
@@ -22,10 +22,12 @@ public class EnderpearlItemMixin {
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
     private void onUse(Level level, Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
         boolean inStasis;
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
-            inStasis = ModEvents.isPlayerInAnyStasis(serverPlayer);
+        if (!level.isClientSide) {
+            inStasis = player instanceof ServerPlayer serverPlayer && ModEvents.isPlayerInAnyStasis(serverPlayer);
         } else {
-            inStasis = player.hasEffect(MobEffects.MOVEMENT_SLOWDOWN);
+            long currentTick = level.getGameTime();
+            inStasis = ModConstants.CLIENT_STASIS_ZONES.stream()
+                    .anyMatch(z -> !z.isExpired(currentTick) && z.isInside(player.getX(), player.getY(), player.getZ()));
         }
 
         if (inStasis) {

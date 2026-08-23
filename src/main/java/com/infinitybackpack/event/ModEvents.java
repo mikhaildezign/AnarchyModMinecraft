@@ -1,11 +1,13 @@
 package com.infinitybackpack.event;
 
+import com.infinitybackpack.network.StasisSyncPayload;
 import com.infinitybackpack.registry.ModConstants;
 import com.infinitybackpack.registry.ModEnchantments;
 import com.infinitybackpack.registry.ModItems;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.item.v1.EnchantmentEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.util.TriState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -179,7 +181,10 @@ public class ModEvents {
             for (ServerLevel level : server.getAllLevels()) {
                 long currentTick = level.getGameTime();
 
-                ModConstants.ACTIVE_STASIS_ZONES.removeIf(zone -> zone.level() == level && zone.isExpired(currentTick));
+                boolean changed = ModConstants.ACTIVE_STASIS_ZONES.removeIf(zone -> zone.level() == level && zone.isExpired(currentTick));
+                if (changed) {
+                    syncStasisToPlayers(level);
+                }
 
                 for (ModConstants.StasisZone zone : ModConstants.ACTIVE_STASIS_ZONES) {
                     if (zone.level() == level) spawnStasisParticles(zone);
@@ -218,6 +223,7 @@ public class ModEvents {
 
     public static void addStasisZone(ServerLevel level, BlockPos center, long endTick, UUID activator) {
         ModConstants.ACTIVE_STASIS_ZONES.add(new ModConstants.StasisZone(level, center, endTick, activator));
+        syncStasisToPlayers(level);
     }
 
     public static boolean isPlayerInAnyStasis(ServerPlayer player) {
@@ -227,6 +233,17 @@ public class ModEvents {
             }
         }
         return false;
+    }
+
+    private static void syncStasisToPlayers(ServerLevel level) {
+        java.util.List<ModConstants.ClientStasisZone> zones = ModConstants.ACTIVE_STASIS_ZONES.stream()
+                .filter(z -> z.level() == level)
+                .map(z -> new ModConstants.ClientStasisZone(z.center(), z.endTick(), z.activator()))
+                .toList();
+        StasisSyncPayload payload = new StasisSyncPayload(zones);
+        for (ServerPlayer player : level.players()) {
+            ServerPlayNetworking.send(player, payload);
+        }
     }
 
     private static void spawnStasisParticles(ModConstants.StasisZone zone) {

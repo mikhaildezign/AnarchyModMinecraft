@@ -41,4 +41,15 @@ public class ModConstants {
             return Math.abs(x - center.getX()) <= 15 && Math.abs(y - center.getY()) <= 15 && Math.abs(z - center.getZ()) <= 15;
         }
     }
+
+    public static final java.util.List<ClientStasisZone> CLIENT_STASIS_ZONES = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public record ClientStasisZone(BlockPos center, long endTick, UUID activator) {
+        public boolean isExpired(long currentTick) {
+            return currentTick >= endTick;
+        }
+        public boolean isInside(double x, double y, double z) {
+            return Math.abs(x - center.getX()) <= 15 && Math.abs(y - center.getY()) <= 15 && Math.abs(z - center.getZ()) <= 15;
+        }
+    }
 }

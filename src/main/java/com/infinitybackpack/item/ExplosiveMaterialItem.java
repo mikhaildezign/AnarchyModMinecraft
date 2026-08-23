@@ -40,7 +40,7 @@ public class ExplosiveMaterialItem extends Item {
                 .withStyle(Style.EMPTY.withColor(0x555555)));
         tooltipComponents.add(Component.literal(" — используется исключительно для крафта")
                 .withStyle(Style.EMPTY.withColor(0xFFFFFF)));
-        tooltipComponents.add(Component.literal("   продвинутых типов взрывчатки.")
+        tooltipComponents.add(Component.literal("    продвинутых типов взрывчатки.")
                 .withStyle(Style.EMPTY.withColor(0xFFFFFF)));
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
