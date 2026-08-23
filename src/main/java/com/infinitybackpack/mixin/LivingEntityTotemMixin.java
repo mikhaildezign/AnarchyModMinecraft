@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class LivingEntityTotemMixin {
 
     @Inject(method = "checkTotemDeathProtection", at = @At("HEAD"), cancellable = true)
-    private void onCheckTotemDeathProtection(DamageSource damageSource, CallbackInfoReturnable<ItemStack> cir) {
+    private void onCheckTotemDeathProtection(DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
 
         for (InteractionHand hand : InteractionHand.values()) {
@@ -38,7 +38,7 @@ public class LivingEntityTotemMixin {
                 entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 800, 0));
 
                 stack.shrink(1);
-                cir.setReturnValue(stack);
+                cir.setReturnValue(true);
                 return;
             }
         }

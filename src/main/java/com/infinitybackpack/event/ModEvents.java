@@ -192,8 +192,6 @@ public class ModEvents {
 
                     if (shouldSlow) {
                         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, true));
-                    } else {
-                        player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
                     }
                 }
             }
