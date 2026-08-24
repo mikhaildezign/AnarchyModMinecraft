@@ -14,6 +14,7 @@ import com.infinitybackpack.client.screen.BackpackScreen;
 import com.infinitybackpack.client.screen.ExpExchangeScreen;
 import com.infinitybackpack.client.screen.TntCannonScreen;
 import com.infinitybackpack.network.ToggleAutoSmeltPayload;
+import com.infinitybackpack.network.ToggleDrillPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -54,26 +55,30 @@ public class InfinityBackpackClient implements ClientModInitializer {
                 return InteractionResultHolder.pass(player.getItemInHand(hand));
             }
 
-            if (!Screen.hasControlDown()) {
-                return InteractionResultHolder.pass(player.getItemInHand(hand));
-            }
-
-            if (Screen.hasShiftDown()) {
-                return InteractionResultHolder.pass(player.getItemInHand(hand));
-            }
-
             ItemStack stack = player.getItemInHand(hand);
             if (stack.isEmpty()) {
                 return InteractionResultHolder.pass(stack);
             }
 
-            int autoSmeltLevel = ModItems.getAutoSmeltLevel(stack);
-            if (autoSmeltLevel <= 0) {
-                return InteractionResultHolder.pass(stack);
+            // Ctrl + ПКМ — Автоплавка
+            if (Screen.hasControlDown() && !Screen.hasShiftDown()) {
+                int autoSmeltLevel = ModItems.getAutoSmeltLevel(stack);
+                if (autoSmeltLevel > 0) {
+                    ClientPlayNetworking.send(new ToggleAutoSmeltPayload());
+                    return InteractionResultHolder.success(stack);
+                }
             }
 
-            ClientPlayNetworking.send(new ToggleAutoSmeltPayload());
-            return InteractionResultHolder.success(stack);
+            // Shift + ПКМ — Бур
+            if (Screen.hasShiftDown() && !Screen.hasControlDown()) {
+                int drillLevel = ModItems.getDrillLevel(stack);
+                if (drillLevel > 0) {
+                    ClientPlayNetworking.send(new ToggleDrillPayload());
+                    return InteractionResultHolder.success(stack);
+                }
+            }
+
+            return InteractionResultHolder.pass(stack);
         });
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {

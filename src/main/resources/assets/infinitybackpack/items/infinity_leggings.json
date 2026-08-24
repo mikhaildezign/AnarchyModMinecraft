@@ -1,0 +1,12 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "infinitybackpack:item/infinity_leggings",
+    "tints": [
+      {
+        "type": "minecraft:trim",
+        "default": -1
+      }
+    ]
+  }
+}

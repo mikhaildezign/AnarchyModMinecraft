@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "infinitybackpack:infinity_helmet",
+    "infinitybackpack:infinity_chestplate",
+    "infinitybackpack:infinity_leggings",
+    "infinitybackpack:infinity_boots"
+  ]
+}
