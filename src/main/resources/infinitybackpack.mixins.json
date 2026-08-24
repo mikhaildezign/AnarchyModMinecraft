@@ -13,6 +13,7 @@
     "ChorusFruitItemMixin",
     "LivingEntityTotemMixin",
     "LivingEntityCriticalMixin",
+    "LivingEntityImpenetrableMixin",
     "ExampleMixin"
   ],
   "client": [
