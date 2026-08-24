@@ -1,6 +1,7 @@
 package com.infinitybackpack.item;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -8,6 +9,7 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.List;
 
@@ -55,6 +57,17 @@ public class InfinityTalismanItem extends Item {
         tooltipComponents.add(makeLine("Макс. здоровье", "II", bullet, name, value));
         tooltipComponents.add(makeLine("Броня", "II", bullet, name, value));
         tooltipComponents.add(makeLine("Урон", "II", bullet, name, value));
+
+        // Руна Бессмертие
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
+            tooltipComponents.add(Component.empty());
+            tooltipComponents.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x00BFFF)));
+            tooltipComponents.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
+                    .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
+            tooltipComponents.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+        }
+
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
     }
 

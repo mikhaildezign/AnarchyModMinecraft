@@ -283,6 +283,12 @@ public class ModItems {
                     )))
     );
 
+    public static final Item IMMORTALITY_RUNE = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "immortality_rune"),
+            new ImmortalityRuneItem(new Item.Properties())
+    );
+
     // === TALISMAN ===
     private static final ItemAttributeModifiers TALISMAN_ATTRIBUTES = ItemAttributeModifiers.builder()
             .add(Attributes.MOVEMENT_SPEED, new AttributeModifier(ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "talisman_speed"), 0.4, AttributeModifier.Operation.ADD_MULTIPLIED_BASE), EquipmentSlotGroup.OFFHAND)

@@ -45,6 +45,7 @@ public class ModItemGroups {
             content.accept(ModItems.ENHANCED_SWIFTNESS_3MIN);
             content.accept(ModItems.ENHANCED_SWIFTNESS_6MIN);
             content.accept(ModItems.WINNER_POTION);
+            content.accept(ModItems.IMMORTALITY_RUNE);
         });
     }
 }

@@ -29,6 +29,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 public class InfinityBackpackClient implements ClientModInitializer {
     @Override
@@ -60,7 +61,6 @@ public class InfinityBackpackClient implements ClientModInitializer {
                 return InteractionResultHolder.pass(stack);
             }
 
-            // Ctrl + ПКМ — Автоплавка
             if (Screen.hasControlDown() && !Screen.hasShiftDown()) {
                 int autoSmeltLevel = ModItems.getAutoSmeltLevel(stack);
                 if (autoSmeltLevel > 0) {
@@ -69,7 +69,6 @@ public class InfinityBackpackClient implements ClientModInitializer {
                 }
             }
 
-            // Shift + ПКМ — Бур
             if (Screen.hasShiftDown() && !Screen.hasControlDown()) {
                 int drillLevel = ModItems.getDrillLevel(stack);
                 if (drillLevel > 0) {
@@ -141,6 +140,32 @@ public class InfinityBackpackClient implements ClientModInitializer {
                         .append(Component.literal("зачарования").withStyle(Style.EMPTY.withColor(0xFFAA00)))
                         .append(Component.literal(".").withStyle(Style.EMPTY.withColor(0xFFFFFF))));
             }
+
+            if (stack.is(Items.TOTEM_OF_UNDYING)) {
+                net.minecraft.world.item.component.CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+                if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
+                    lines.add(Component.empty());
+                    lines.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x00BFFF)));
+                    lines.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
+                            .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
+                    lines.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+                }
+            }
         });
+
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
+                    if (tintIndex == 0) {
+                        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
+                        if (contents != null) {
+                            return contents.customColor().orElseGet(() -> PotionContents.getColor(contents.getAllEffects()));
+                        }
+                    }
+                    return 0xFFFFFF;
+                },
+                ModItems.ENHANCED_STRENGTH_3MIN,
+                ModItems.ENHANCED_STRENGTH_6MIN,
+                ModItems.ENHANCED_SWIFTNESS_3MIN,
+                ModItems.ENHANCED_SWIFTNESS_6MIN
+        );
     }
 }

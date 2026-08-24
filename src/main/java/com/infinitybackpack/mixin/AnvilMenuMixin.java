@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AnvilMenu;
@@ -18,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -39,12 +41,24 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         super(type, id, inventory, access);
     }
 
-    // === РЕЦЕПТЫ УЛУЧШЕННЫХ ЗЕЛИЙ ===
+    // === РЕЦЕПТЫ УЛУЧШЕННЫХ ЗЕЛИЙ + РУНЫ ===
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
     private void onCreateResult(CallbackInfo ci) {
         AnvilMenu menu = (AnvilMenu)(Object)this;
         ItemStack left = menu.getSlot(0).getItem();
         ItemStack right = menu.getSlot(1).getItem();
+
+        // --- РУНА БЕССМЕРТИЕ ---
+        if ((left.is(Items.TOTEM_OF_UNDYING) || left.is(ModItems.INFINITY_TALISMAN)) && right.is(ModItems.IMMORTALITY_RUNE)) {
+            if (!hasRune(left, "immortality")) {
+                ItemStack result = applyRune(left.copy(), "immortality");
+                menu.getSlot(2).set(result);
+                this.cost.set(10);
+                this.repairItemCountCost = 1;
+                ci.cancel();
+                return;
+            }
+        }
 
         if (isVanillaStrengthII(left) && isVanillaStrengthII(right)) {
             int count = Math.min(left.getCount(), right.getCount());
@@ -88,11 +102,35 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
     private void onTake(Player player, ItemStack stack, CallbackInfo ci) {
         AnvilMenu menu = (AnvilMenu)(Object)this;
         ItemStack result = menu.getSlot(2).getItem();
-        if (result.isEmpty() || !isEnhancedPotion(result)) return;
+        if (result.isEmpty()) return;
+
+        // --- РУНЫ ---
+        if (hasRune(result, "immortality")) {
+            ItemStack left = this.inputSlots.getItem(0);
+            ItemStack right = this.inputSlots.getItem(1);
+
+            if (!left.isEmpty()) {
+                left.shrink(1);
+                this.inputSlots.setItem(0, left.isEmpty() ? ItemStack.EMPTY : left);
+            }
+            if (!right.isEmpty()) {
+                right.shrink(1);
+                this.inputSlots.setItem(1, right.isEmpty() ? ItemStack.EMPTY : right);
+            }
+
+            if (!player.getAbilities().instabuild) {
+                player.giveExperienceLevels(-this.cost.get());
+            }
+
+            this.access.execute((world, pos) -> world.levelEvent(1030, pos, 0));
+            ci.cancel();
+            return;
+        }
+
+        if (!isEnhancedPotion(result)) return;
 
         int count = result.getCount();
 
-        // Левый слот
         ItemStack left = this.inputSlots.getItem(0);
         if (!left.isEmpty()) {
             left.shrink(count);
@@ -101,7 +139,6 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
             this.inputSlots.setItem(0, ItemStack.EMPTY);
         }
 
-        // Правый слот
         ItemStack right = this.inputSlots.getItem(1);
         if (!right.isEmpty()) {
             right.shrink(count);
@@ -110,12 +147,10 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
             this.inputSlots.setItem(1, ItemStack.EMPTY);
         }
 
-        // Опыт
         if (!player.getAbilities().instabuild) {
             player.giveExperienceLevels(-this.cost.get());
         }
 
-        // Звук наковальни
         this.access.execute((world, pos) -> world.levelEvent(1030, pos, 0));
 
         ci.cancel();
@@ -146,6 +181,21 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         if (hasEnchantment(result, ModEnchantments.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
             removeEnchantment(result, Enchantments.SILK_TOUCH);
         }
+    }
+
+    // === ХЕЛПЕРЫ ДЛЯ РУН ===
+    private boolean hasRune(ItemStack stack, String runeType) {
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) return false;
+        return customData.copyTag().getString("RuneType").equals(runeType);
+    }
+
+    private ItemStack applyRune(ItemStack stack, String runeType) {
+        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        CompoundTag tag = customData.copyTag();
+        tag.putString("RuneType", runeType);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        return stack;
     }
 
     // === ХЕЛПЕРЫ ДЛЯ ЗЕЛИЙ ===
