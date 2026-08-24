@@ -1,0 +1,22 @@
+{
+  "description": {
+    "translate": "enchantment.infinitybackpack.critical"
+  },
+  "supported_items": "#infinitybackpack:critical",
+  "primary_items": "#infinitybackpack:critical",
+  "weight": 2,
+  "max_level": 2,
+  "min_cost": {
+    "base": 10,
+    "per_level_above_first": 20
+  },
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 20
+  },
+  "anvil_cost": 2,
+  "slots": [
+    "mainhand"
+  ],
+  "effects": {}
+}

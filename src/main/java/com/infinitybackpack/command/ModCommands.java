@@ -1,5 +1,6 @@
 package com.infinitybackpack.command;
 
+import com.infinitybackpack.registry.ModConstants;
 import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.registry.ModMenus;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -25,6 +26,7 @@ public class ModCommands {
         registerExpCommand();
         registerElytraTestCommand();
         registerFilterCommand();
+        registerTestCriticalCommand();
     }
 
     private static void registerExpCommand() {
@@ -153,6 +155,24 @@ public class ModCommands {
                                         }
                                         return 1;
                                     }))));
+        });
+    }
+
+    private static void registerTestCriticalCommand() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(Commands.literal("testcritical")
+                    .requires(source -> source.hasPermission(0))
+                    .executes(context -> {
+                        if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                            boolean enabled = ModConstants.TEST_CRITICAL_PLAYERS.getOrDefault(player.getUUID(), false);
+                            ModConstants.TEST_CRITICAL_PLAYERS.put(player.getUUID(), !enabled);
+                            player.sendSystemMessage(Component.literal(
+                                    "Режим теста Критический: " + (!enabled ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН")
+                            ).withStyle(Style.EMPTY.withColor(!enabled ? 0x00FF00 : 0xFF0000)));
+                            return 1;
+                        }
+                        return 0;
+                    }));
         });
     }
 }

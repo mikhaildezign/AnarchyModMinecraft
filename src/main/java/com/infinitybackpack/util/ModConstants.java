@@ -25,6 +25,7 @@ public class ModConstants {
     public static final Map<UUID, List<String>> PLAYER_FILTERS = new HashMap<>();
     public static final Map<UUID, Long> lastUnbreakableWarnTick = new HashMap<>();
     public static final Map<UUID, BlockPos> lastUnbreakableWarnPos = new HashMap<>();
+    public static final Map<UUID, Boolean> TEST_CRITICAL_PLAYERS = new HashMap<>();
 
     public static final TagKey<Item> PICKAXES_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "pickaxes"));
     public static final TagKey<Item> SHOVELS_TAG = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("minecraft", "shovels"));

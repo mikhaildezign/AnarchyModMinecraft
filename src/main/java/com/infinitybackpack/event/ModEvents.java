@@ -225,6 +225,12 @@ public class ModEvents {
                 }
                 return TriState.FALSE;
             }
+            if (enchantment.is(ModEnchantments.CRITICAL)) {
+                if (target.is(net.minecraft.tags.ItemTags.SWORDS) || target.is(net.minecraft.tags.ItemTags.AXES) || target.is(Items.BOOK)) {
+                    return TriState.TRUE;
+                }
+                return TriState.FALSE;
+            }
             return TriState.DEFAULT;
         });
     }

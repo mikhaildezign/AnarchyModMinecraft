@@ -12,6 +12,7 @@
     "EnderpearlItemMixin",
     "ChorusFruitItemMixin",
     "LivingEntityTotemMixin",
+    "LivingEntityCriticalMixin",
     "ExampleMixin"
   ],
   "client": [

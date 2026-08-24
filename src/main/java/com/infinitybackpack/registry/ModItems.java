@@ -495,6 +495,22 @@ public class ModItems {
         return 0;
     }
 
+    public static int getCriticalLevel(ItemStack stack) {
+        ItemEnchantments enchantments = stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : enchantments.entrySet()) {
+            if (entry.getKey().is(ModEnchantments.CRITICAL)) {
+                return entry.getIntValue();
+            }
+        }
+        ItemEnchantments stored = stack.getOrDefault(DataComponents.STORED_ENCHANTMENTS, ItemEnchantments.EMPTY);
+        for (Object2IntMap.Entry<Holder<Enchantment>> entry : stored.entrySet()) {
+            if (entry.getKey().is(ModEnchantments.CRITICAL)) {
+                return entry.getIntValue();
+            }
+        }
+        return 0;
+    }
+
     public static boolean hasEnchantmentLevel(ItemStack stack, ResourceKey<Enchantment> key, int level) {
         return getEnchantmentLevel(stack, key) == level;
     }
