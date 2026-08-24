@@ -1,13 +1,9 @@
 package com.infinitybackpack.client;
 
 import com.infinitybackpack.network.StasisSyncPayload;
-import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.alchemy.PotionContents;
 import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.registry.ModMenus;
 import com.infinitybackpack.registry.ModEntities;
-import com.infinitybackpack.InfinityBackpackMod;
 import com.infinitybackpack.client.renderer.CustomPrimedTntRenderer;
 import com.infinitybackpack.client.renderer.ShulkerBoxItemRenderer;
 import com.infinitybackpack.client.screen.BackpackScreen;
@@ -24,6 +20,10 @@ import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.InteractionHand;
@@ -143,29 +143,38 @@ public class InfinityBackpackClient implements ClientModInitializer {
 
             if (stack.is(Items.TOTEM_OF_UNDYING)) {
                 net.minecraft.world.item.component.CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-                if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
-                    lines.add(Component.empty());
-                    lines.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x00BFFF)));
-                    lines.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
-                            .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
-                    lines.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+                if (customData != null) {
+                    boolean hasImmortality = hasRuneInData(customData, "immortality");
+                    boolean hasRecovery = hasRuneInData(customData, "recovery");
+                    if (hasImmortality || hasRecovery) {
+                        lines.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x1E90FF)));
+                        if (hasRecovery) {
+                            lines.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFF0000))
+                                    .append(Component.literal("Восстановление.").withStyle(Style.EMPTY.withColor(0xFF0000))));
+                        }
+                        if (hasImmortality) {
+                            lines.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
+                                    .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
+                        }
+                        lines.add(Component.empty());
+                        lines.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+                    }
                 }
             }
         });
+    }
 
-        ColorProviderRegistry.ITEM.register((stack, tintIndex) -> {
-                    if (tintIndex == 0) {
-                        PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
-                        if (contents != null) {
-                            return contents.customColor().orElseGet(() -> PotionContents.getColor(contents.getAllEffects()));
-                        }
-                    }
-                    return 0xFFFFFF;
-                },
-                ModItems.ENHANCED_STRENGTH_3MIN,
-                ModItems.ENHANCED_STRENGTH_6MIN,
-                ModItems.ENHANCED_SWIFTNESS_3MIN,
-                ModItems.ENHANCED_SWIFTNESS_6MIN
-        );
+    private static boolean hasRuneInData(net.minecraft.world.item.component.CustomData customData, String runeType) {
+        CompoundTag tag = customData.copyTag();
+        if (tag.contains("RuneTypes", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("RuneTypes", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.getString(i).equals(runeType)) return true;
+            }
+        }
+        if (tag.contains("RuneType", Tag.TAG_STRING)) {
+            return tag.getString("RuneType").equals(runeType);
+        }
+        return false;
     }
 }

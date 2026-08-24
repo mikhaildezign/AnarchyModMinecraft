@@ -198,6 +198,14 @@ public class ModEvents {
                     if (shouldSlow) {
                         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false, true));
                     }
+
+                    // Руна Бессмертие — полная неуязвимость как в креативе
+                    var resistance = player.getEffect(MobEffects.DAMAGE_RESISTANCE);
+                    if (resistance != null && resistance.getAmplifier() >= 255 && resistance.getDuration() > 0) {
+                        player.setInvulnerable(true);
+                    } else if (!player.isCreative() && !player.isSpectator()) {
+                        player.setInvulnerable(false);
+                    }
                 }
             }
         });

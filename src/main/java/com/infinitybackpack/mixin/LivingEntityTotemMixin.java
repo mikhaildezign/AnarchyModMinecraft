@@ -3,6 +3,9 @@ package com.infinitybackpack.mixin;
 import com.infinitybackpack.registry.ModItems;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import net.minecraft.world.InteractionHand;
@@ -35,15 +38,24 @@ public class LivingEntityTotemMixin {
                     serverPlayer.level().broadcastEntityEvent(serverPlayer, (byte) 35);
                 }
 
-                entity.setHealth(1.0F);
+                CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+                boolean hasImmortality = customData != null && hasRuneInData(customData, "immortality");
+                boolean hasRecovery = customData != null && hasRuneInData(customData, "recovery");
+
+                if (hasRecovery) {
+                    entity.setHealth(entity.getMaxHealth());
+                } else {
+                    entity.setHealth(1.0F);
+                }
+
                 entity.removeAllEffects();
                 entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 900, 1));
                 entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 1));
                 entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 800, 0));
 
-                CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-                if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
+                if (hasImmortality) {
                     entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 255, false, false, true));
+                    entity.setInvulnerable(true);
                 }
 
                 stack.shrink(1);
@@ -52,24 +64,36 @@ public class LivingEntityTotemMixin {
             }
         }
 
-        // Ванильный тотем с руной Бессмертие
+        // Ванильный тотем с рунами
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack stack = entity.getItemInHand(hand);
             if (stack.is(Items.TOTEM_OF_UNDYING)) {
                 CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-                if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
+                boolean hasImmortality = customData != null && hasRuneInData(customData, "immortality");
+                boolean hasRecovery = customData != null && hasRuneInData(customData, "recovery");
+
+                if (hasImmortality || hasRecovery) {
                     if (entity instanceof ServerPlayer serverPlayer) {
                         serverPlayer.awardStat(Stats.ITEM_USED.get(Items.TOTEM_OF_UNDYING));
                         CriteriaTriggers.USED_TOTEM.trigger(serverPlayer, stack);
                         serverPlayer.level().broadcastEntityEvent(serverPlayer, (byte) 35);
                     }
 
-                    entity.setHealth(1.0F);
+                    if (hasRecovery) {
+                        entity.setHealth(entity.getMaxHealth());
+                    } else {
+                        entity.setHealth(1.0F);
+                    }
+
                     entity.removeAllEffects();
                     entity.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 900, 1));
                     entity.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 100, 1));
                     entity.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 800, 0));
-                    entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 255, false, false, true));
+
+                    if (hasImmortality) {
+                        entity.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 255, false, false, true));
+                        entity.setInvulnerable(true);
+                    }
 
                     stack.shrink(1);
                     cir.setReturnValue(true);
@@ -77,5 +101,19 @@ public class LivingEntityTotemMixin {
                 }
             }
         }
+    }
+
+    private static boolean hasRuneInData(CustomData customData, String runeType) {
+        CompoundTag tag = customData.copyTag();
+        if (tag.contains("RuneTypes", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("RuneTypes", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.getString(i).equals(runeType)) return true;
+            }
+        }
+        if (tag.contains("RuneType", Tag.TAG_STRING)) {
+            return tag.getString("RuneType").equals(runeType);
+        }
+        return false;
     }
 }

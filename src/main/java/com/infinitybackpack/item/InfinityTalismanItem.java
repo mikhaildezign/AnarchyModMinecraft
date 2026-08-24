@@ -2,6 +2,9 @@ package com.infinitybackpack.item;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -58,14 +61,24 @@ public class InfinityTalismanItem extends Item {
         tooltipComponents.add(makeLine("Броня", "II", bullet, name, value));
         tooltipComponents.add(makeLine("Урон", "II", bullet, name, value));
 
-        // Руна Бессмертие
+        // Руны
         CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
-        if (customData != null && "immortality".equals(customData.copyTag().getString("RuneType"))) {
-            tooltipComponents.add(Component.empty());
-            tooltipComponents.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x00BFFF)));
-            tooltipComponents.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
-                    .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
-            tooltipComponents.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+        if (customData != null) {
+            boolean hasImmortality = hasRuneInData(customData, "immortality");
+            boolean hasRecovery = hasRuneInData(customData, "recovery");
+            if (hasImmortality || hasRecovery) {
+                tooltipComponents.add(Component.empty());
+                tooltipComponents.add(Component.literal("Эффекты при активации:").withStyle(Style.EMPTY.withColor(0x1E90FF)));
+                if (hasRecovery) {
+                    tooltipComponents.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFF0000))
+                            .append(Component.literal("Восстановление.").withStyle(Style.EMPTY.withColor(0xFF0000))));
+                }
+                if (hasImmortality) {
+                    tooltipComponents.add(Component.literal("\u2022 ").withStyle(Style.EMPTY.withColor(0xFFA500))
+                            .append(Component.literal("Бессмертие.").withStyle(Style.EMPTY.withColor(0xFFA500))));
+                }
+                tooltipComponents.add(Component.literal("Применяется после использования").withStyle(Style.EMPTY.withColor(0xAAAAAA)));
+            }
         }
 
         super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
@@ -81,6 +94,20 @@ public class InfinityTalismanItem extends Item {
                 .append(Component.literal(name).withStyle(nameStyle))
                 .append(Component.literal(" ").withStyle(nameStyle))
                 .append(Component.literal(level).withStyle(valueStyle));
+    }
+
+    private static boolean hasRuneInData(CustomData customData, String runeType) {
+        CompoundTag tag = customData.copyTag();
+        if (tag.contains("RuneTypes", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("RuneTypes", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.getString(i).equals(runeType)) return true;
+            }
+        }
+        if (tag.contains("RuneType", Tag.TAG_STRING)) {
+            return tag.getString("RuneType").equals(runeType);
+        }
+        return false;
     }
 
     private static int interpolateColor(int start, int end, float ratio) {

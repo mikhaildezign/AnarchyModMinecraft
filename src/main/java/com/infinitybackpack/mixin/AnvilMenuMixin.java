@@ -2,12 +2,14 @@ package com.infinitybackpack.mixin;
 
 import com.infinitybackpack.registry.ModItems;
 import com.infinitybackpack.registry.ModEnchantments;
-import com.infinitybackpack.InfinityBackpackMod;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AnvilMenu;
@@ -41,7 +43,7 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         super(type, id, inventory, access);
     }
 
-    // === РЕЦЕПТЫ УЛУЧШЕННЫХ ЗЕЛИЙ + РУНЫ ===
+    // === РЕЦЕПТЫ РУН + ЗЕЛИЙ ===
     @Inject(method = "createResult", at = @At("HEAD"), cancellable = true)
     private void onCreateResult(CallbackInfo ci) {
         AnvilMenu menu = (AnvilMenu)(Object)this;
@@ -52,6 +54,18 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         if ((left.is(Items.TOTEM_OF_UNDYING) || left.is(ModItems.INFINITY_TALISMAN)) && right.is(ModItems.IMMORTALITY_RUNE)) {
             if (!hasRune(left, "immortality")) {
                 ItemStack result = applyRune(left.copy(), "immortality");
+                menu.getSlot(2).set(result);
+                this.cost.set(10);
+                this.repairItemCountCost = 1;
+                ci.cancel();
+                return;
+            }
+        }
+
+        // --- РУНА ВОССТАНОВЛЕНИЕ ---
+        if ((left.is(Items.TOTEM_OF_UNDYING) || left.is(ModItems.INFINITY_TALISMAN)) && right.is(ModItems.RECOVERY_RUNE)) {
+            if (!hasRune(left, "recovery")) {
+                ItemStack result = applyRune(left.copy(), "recovery");
                 menu.getSlot(2).set(result);
                 this.cost.set(10);
                 this.repairItemCountCost = 1;
@@ -97,7 +111,7 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         }
     }
 
-    // === ПРАВИЛЬНОЕ УМЕНЬШЕНИЕ СЛОТОВ ПРИ ЗАБИРАНИИ РЕЗУЛЬТАТА ===
+    // === ПРАВИЛЬНОЕ УМЕНЬШЕНИЕ СЛОТОВ ===
     @Inject(method = "onTake", at = @At("HEAD"), cancellable = true)
     private void onTake(Player player, ItemStack stack, CallbackInfo ci) {
         AnvilMenu menu = (AnvilMenu)(Object)this;
@@ -105,7 +119,7 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
         if (result.isEmpty()) return;
 
         // --- РУНЫ ---
-        if (hasRune(result, "immortality")) {
+        if (hasRune(result, "immortality") || hasRune(result, "recovery")) {
             ItemStack left = this.inputSlots.getItem(0);
             ItemStack right = this.inputSlots.getItem(1);
 
@@ -187,13 +201,51 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
     private boolean hasRune(ItemStack stack, String runeType) {
         CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         if (customData == null) return false;
-        return customData.copyTag().getString("RuneType").equals(runeType);
+        CompoundTag tag = customData.copyTag();
+        // Новый формат — список
+        if (tag.contains("RuneTypes", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("RuneTypes", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.getString(i).equals(runeType)) return true;
+            }
+            return false;
+        }
+        // Старый формат — обратная совместимость
+        if (tag.contains("RuneType", Tag.TAG_STRING)) {
+            return tag.getString("RuneType").equals(runeType);
+        }
+        return false;
     }
 
     private ItemStack applyRune(ItemStack stack, String runeType) {
         CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         CompoundTag tag = customData.copyTag();
-        tag.putString("RuneType", runeType);
+        ListTag list = new ListTag();
+
+        // Миграция старого формата
+        if (tag.contains("RuneType", Tag.TAG_STRING)) {
+            list.add(StringTag.valueOf(tag.getString("RuneType")));
+            tag.remove("RuneType");
+        }
+
+        if (tag.contains("RuneTypes", Tag.TAG_LIST)) {
+            ListTag existing = tag.getList("RuneTypes", Tag.TAG_STRING);
+            for (int i = 0; i < existing.size(); i++) {
+                list.add(existing.get(i));
+            }
+        }
+
+        boolean alreadyHas = false;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.getString(i).equals(runeType)) {
+                alreadyHas = true;
+                break;
+            }
+        }
+        if (!alreadyHas) {
+            list.add(StringTag.valueOf(runeType));
+        }
+        tag.put("RuneTypes", list);
         stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         return stack;
     }
