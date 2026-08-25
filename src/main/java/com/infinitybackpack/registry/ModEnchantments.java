@@ -41,6 +41,11 @@ public class ModEnchantments {
             ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "critical")
     );
 
+    public static final ResourceKey<Enchantment> DESTROYER = ResourceKey.create(
+            Registries.ENCHANTMENT,
+            ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "destroyer")
+    );
+
     public static void init() {
         // ResourceKey регистрируются лениво через JSON, здесь только объявления
     }

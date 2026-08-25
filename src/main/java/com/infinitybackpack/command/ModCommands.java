@@ -28,6 +28,7 @@ public class ModCommands {
         registerFilterCommand();
         registerTestCriticalCommand();
         registerTestImpenetrableCommand();
+        registerTestDestroyerCommand();
     }
 
     private static void registerExpCommand() {
@@ -187,6 +188,24 @@ public class ModCommands {
                             ModConstants.TEST_IMPENETRABLE_PLAYERS.put(player.getUUID(), !enabled);
                             player.sendSystemMessage(Component.literal(
                                     "Режим теста Непробиваемый: " + (!enabled ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН")
+                            ).withStyle(Style.EMPTY.withColor(!enabled ? 0x00FF00 : 0xFF0000)));
+                            return 1;
+                        }
+                        return 0;
+                    }));
+        });
+    }
+
+    private static void registerTestDestroyerCommand() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            dispatcher.register(Commands.literal("testdestroyer")
+                    .requires(source -> source.hasPermission(0))
+                    .executes(context -> {
+                        if (context.getSource().getEntity() instanceof ServerPlayer player) {
+                            boolean enabled = ModConstants.TEST_DESTROYER_PLAYERS.getOrDefault(player.getUUID(), false);
+                            ModConstants.TEST_DESTROYER_PLAYERS.put(player.getUUID(), !enabled);
+                            player.sendSystemMessage(Component.literal(
+                                    "Режим теста Разрушитель: " + (!enabled ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН")
                             ).withStyle(Style.EMPTY.withColor(!enabled ? 0x00FF00 : 0xFF0000)));
                             return 1;
                         }

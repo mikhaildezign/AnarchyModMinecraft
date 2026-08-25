@@ -192,6 +192,12 @@ public abstract class AnvilMenuMixin extends ItemCombinerMenu {
             }
         }
 
+        if (hasEnchantmentLevel(result, ModEnchantments.DESTROYER, 3)) {
+            if (!hasEnchantmentLevel(left, ModEnchantments.DESTROYER, 3) && !hasEnchantmentLevel(right, ModEnchantments.DESTROYER, 3)) {
+                setEnchantmentLevel(result, ModEnchantments.DESTROYER, 2);
+            }
+        }
+
         if (hasEnchantment(result, ModEnchantments.AUTOSMELT) && hasEnchantment(result, Enchantments.SILK_TOUCH)) {
             removeEnchantment(result, Enchantments.SILK_TOUCH);
         }
