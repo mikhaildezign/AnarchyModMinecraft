@@ -21,6 +21,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -28,9 +29,11 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
 import java.util.UUID;
@@ -239,6 +242,21 @@ public class ModEvents {
             }
             return TriState.DEFAULT;
         });
+    }
+
+    private static ItemStack findBuildingBlock(Player player) {
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.getItem() instanceof BlockItem blockItem) {
+                Block block = blockItem.getBlock();
+                if (block == Blocks.AIR) continue;
+                if (block instanceof FallingBlock) continue;
+                if (block.defaultBlockState().isSolid()) {
+                    return stack;
+                }
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     public static void addStasisZone(ServerLevel level, BlockPos center, long endTick, UUID activator) {
