@@ -16,6 +16,7 @@
     "LivingEntityImpenetrableMixin",
     "LivingEntityDestroyerMixin",
     "PlayerDestroyerMixin",
+    "LivingEntitySwingMixin",
     "ExampleMixin"
   ],
   "client": [

@@ -47,6 +47,7 @@ public class ModItemGroups {
             content.accept(ModItems.WINNER_POTION);
             content.accept(ModItems.IMMORTALITY_RUNE);
             content.accept(ModItems.RECOVERY_RUNE);
+            content.accept(ModItems.SNOWMAN);
         });
     }
 }

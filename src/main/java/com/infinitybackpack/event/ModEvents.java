@@ -1,5 +1,12 @@
 package com.infinitybackpack.event;
 
+import net.minecraft.world.item.Item;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import com.infinitybackpack.network.StasisSyncPayload;
 import com.infinitybackpack.registry.ModConstants;
 import com.infinitybackpack.registry.ModEnchantments;
@@ -44,6 +51,7 @@ public class ModEvents {
         registerBlockBreakEvents();
         registerServerTickEvents();
         registerEnchantmentEvents();
+        registerSnowmanEffect();
     }
 
     private static void registerBlockBreakEvents() {
@@ -308,5 +316,27 @@ public class ModEvents {
             level.sendParticles(white, c.getX() - r, c.getY() + r, c.getZ() + i, 1, 0, 0, 0, 0);
             level.sendParticles(white, c.getX() + r, c.getY() + r, c.getZ() + i, 1, 0, 0, 0, 0);
         }
+    }
+
+    private static void registerSnowmanEffect() {
+        AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (world.isClientSide) return InteractionResult.PASS;
+            if (!(entity instanceof LivingEntity target)) return InteractionResult.PASS;
+
+            boolean hasSnowman = hasItemInInventory(player, ModItems.SNOWMAN);
+            if (!hasSnowman) return InteractionResult.PASS;
+
+            if (world.random.nextFloat() < 0.02f) {
+                target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 100, 0, false, true, true));
+            }
+            return InteractionResult.PASS;
+        });
+    }
+
+    private static boolean hasItemInInventory(Player player, Item item) {
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.is(item)) return true;
+        }
+        return player.getOffhandItem().is(item);
     }
 }

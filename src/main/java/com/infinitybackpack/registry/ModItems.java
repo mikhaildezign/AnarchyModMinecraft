@@ -1,5 +1,6 @@
 package com.infinitybackpack.registry;
 
+import com.infinitybackpack.item.SnowmanItem;
 import com.infinitybackpack.item.WinnerPotionItem;
 import net.minecraft.world.item.alchemy.Potion;
 import com.infinitybackpack.item.*;
@@ -127,6 +128,14 @@ public class ModItems {
             BuiltInRegistries.ITEM,
             ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "snowball_clump"),
             new SnowballClumpItem(new Item.Properties().stacksTo(16))
+    );
+
+    // === SNOWMAN (Experience Keeper) ===
+    public static final Item SNOWMAN = Registry.register(
+            BuiltInRegistries.ITEM,
+            ResourceLocation.fromNamespaceAndPath(ModConstants.MOD_ID, "snowman"),
+            new SnowmanItem(new Item.Properties().stacksTo(1)
+                    .component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true))
     );
 
     // === EXP BOTTLES ===
